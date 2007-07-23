@@ -1,37 +1,4 @@
 <?php
-/*
-Plugin Name: Wordpress OpenID (+)
-Plugin URI: http://willnorris.com/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
-Author: Will Norris
-Author URI: http://willnorris.com/
-Version: $Rev$
-Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
-*/
-
-define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/' . basename(dirname(__FILE__)) );  
-define ( 'OPENIDIMAGE', get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/images/openid.gif' );
-
-define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
-	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
-define ( 'WPOPENID_DB_VERSION', 11258);
-
-
-/* Turn on logging of process via error_log() facility in PHP.
- * Used primarily for debugging, lots of output.
- * For production use, leave this set to false.
- */
-
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
-if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
-	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
-	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
-	ini_set('error_reporting', 2039);
-}
-
-/* Sessions are required by Services_Yadis_PHPSession, in Manager.php line 40 */
-@session_start();
-
 if  ( !class_exists('WordpressOpenIDRegistration') ) {
 	class WordpressOpenIDRegistration {
 
@@ -1045,16 +1012,5 @@ add_option( 'oid_plugin_version', 0, 'OpenID plugin version' );
 add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
 add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
 add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
-
-/* Instantiate User Interface class */
-@include_once('user-interface.php');
-if( class_exists('WordpressOpenIDRegistrationUI')) {
-	$wordpressOpenIDRegistrationUI = new WordpressOpenIDRegistrationUI();
-	$wordpressOpenIDRegistrationUI->startup();
-	if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($wordpressOpenIDRegistrationUI->oid->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
-} else {
-	update_option('oid_plugin_enabled', false);
-	wp_die('<div class="error"><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>');
-}
 
 ?>
