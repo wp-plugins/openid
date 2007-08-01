@@ -241,7 +241,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			
 			if( get_option('oid_enable_loginform') ) {
 				global $wordpressOpenIDRegistrationUI;
-				ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_login_ob' ) );
+				ob_start( array( &$wordpressOpenIDRegistrationUI, 'login_ob' ) );
 			}
 		}
 
@@ -428,7 +428,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/*  
 		 * Prepare to start the redirect loop
 		 * This function is mainly for assembling urls
-		 * Called from wp_authenticate (for login form) and openid_wp_comment_tagging (for comment form)
+		 * Called from wp_authenticate (for login form) and comment_tagging (for comment form)
 		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
 		 */
 		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
@@ -482,7 +482,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				case 'wp-login.php':
 					if( $action == 'register' ) {
 						global $wordpressOpenIDRegistrationUI;
-						ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
+						ob_start( array( &$wordpressOpenIDRegistrationUI, 'register_ob' ) );
 						return;
 					}
 					if ( !isset( $_GET['openid_mode'] ) ) return;
@@ -494,7 +494,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 				case 'wp-register.php':
 					global $wordpressOpenIDRegistrationUI;
-					ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
+					ob_start( array( &$wordpressOpenIDRegistrationUI, 'register_ob' ) );
 					return;
 
 				default:
@@ -759,7 +759,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 		/* Called when comment is submitted by get_option('require_name_email') */
-		function openid_bypass_option_require_name_email( $value ) {
+		function bypass_option_require_name_email( $value ) {
 			global $openid_auth_request;
 
 			if (get_option('oid_enable_unobtrusive')) {
@@ -776,7 +776,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					}
 				}
 			} else {
-				if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in openid_wp_comment_tagging
+				if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in comment_tagging
 					return false;
 				}
 			}
@@ -789,7 +789,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Set the comment_type to 'openid', so it can be drawn differently by theme.
 		 * If comment is submitted along with an openid url, store comment in cookie, and do authentication.
 		 */
-		function openid_wp_comment_tagging( $comment ) {
+		function comment_tagging( $comment ) {
 			global $current_user;		
 			
 			if( get_usermeta($current_user->ID, 'registered_with_openid') ) {
@@ -824,7 +824,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/* Hooks to clean up wp_notify_postauthor() emails
 		 * Tries to call as few functions as required */
 		/* These are necessary because our comment_type is 'openid', but wordpress is expecting 'comment' */
-		function openid_comment_notification_text( $notify_message_original, $comment_id ) {
+		function comment_notification_text( $notify_message_original, $comment_id ) {
 			if( $this->flag_doing_openid_comment ) {
 				$comment = get_comment( $comment_id );
 				
@@ -845,7 +845,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			return $notify_message_original;
 		}
-		function openid_comment_notification_subject( $subject, $comment_id ) {
+		function comment_notification_subject( $subject, $comment_id ) {
 			if( $this->flag_doing_openid_comment ) {
 				$comment = get_comment( $comment_id );
 				

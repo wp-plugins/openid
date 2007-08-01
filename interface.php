@@ -15,8 +15,6 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	function startup() {
 		global $wordpressOpenIDRegistration_Status;
 		
-		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
-		
 		if( !class_exists('WordpressOpenIDLogic')) {
 			error_log('WPOpenID plugin core is disabled -- WordpressOpenIDLogic class not found. Ensure files are uploaded correctly.');
 			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
@@ -37,43 +35,6 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			return;
 		}
 		
-		// Kickstart
-		register_activation_hook( 'openid/core.php', array( $this->logic, 'late_bind' ) );
-
-		// Add hooks to handle actions in Wordpress
-		add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
-		add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
-
-		// Start and finish the redirect loop, for the admin pages profile.php & users.php
-		add_action( 'init', array( $this->logic, 'admin_page_handler' ) );
-
-		// Comment filtering
-		add_action( 'preprocess_comment', array( $this->logic, 'openid_wp_comment_tagging' ), -99999 );
-		add_filter( 'option_require_name_email', array( $this->logic, 'openid_bypass_option_require_name_email') );
-		add_filter( 'comment_notification_subject', array( $this->logic, 'openid_comment_notification_subject'), 10, 2 );
-		add_filter( 'comment_notification_text', array( $this->logic, 'openid_comment_notification_text'), 10, 2 );
-		add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
-		add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
-		
-		add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
-
-		if( get_option('oid_enable_unobtrusive') ) {
-			add_action( 'init', array( $this, 'unobtrusive_setup'));
-			add_action( 'wp_head', array( $this, 'unobtrusive_head'));
-		}
-
-		if( get_option('oid_enable_commentform') ) {
-			add_filter( 'comments_template', array( $this, 'setup_openid_wp_login_ob'));
-			add_filter( 'get_comment_author_link', array( $this, 'openid_comment_author_link_prefx'));
-		}
-
-		if( get_option('oid_enable_loginform') ) {
-			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-			add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
-		}
-		add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
 	}
 	
 	function login_form_v2_hide_username_password_errors($r) {
@@ -85,13 +46,11 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 	function login_form_v2_insert_fields() {
 		$this->interface->__flag_use_Viper007Bond_login_form = true;
-		$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
-			background-position: 0 50%; padding-left: 18px;" ') : '';
 		?>
 		<hr />
 		<p>
-			<label>Or login using your <img src="<?php echo OPENIDIMAGE; ?>" />OpenID<a title="<?php echo __('What is this?'); ?>" href="http://openid.net/">?</a> url:<br/>
-			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" <?php echo $style; ?>/></label>
+			<label>Or login using your <a class="openid_link" href="http://openid.net/">OpenID</a> url:<br/>
+			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
 		</p>
 		<?php
 	}
@@ -101,20 +60,17 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	 *  @return - String of html
 	 *  Replaces parts of the wp-login.php form.
 	 */
-	function openid_wp_login_ob( $form ) {
+	function login_ob( $form ) {
 		if( $this->interface->__flag_use_Viper007Bond_login_form ) return $form;
 
 		global $redirect_to;
 
-		$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
-			background-position: 0 50%; padding-left: 18px;" ') : '';
-			
 		$newform = '<h2>WordPress User</h2>';
 		$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
 		
 		$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
 			.__('OpenID Identity Url:').
-			' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
+			' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' 
 			.'type="text" class="input openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
 		$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
 		return $form;
@@ -122,57 +78,60 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 
 	/* Hook. Add information about OpenID registration to wp-register.php */
-	function openid_wp_register_ob($form) {
-		$newform = '<p>For faster registration, just <a href="' . get_settings('siteurl')
-			. '/wp-login.php">login with <img src="'.OPENIDIMAGE.'" />OpenID!</a></p></form>';
+	function register_ob($form) {
+		$newform = '<p>For faster registration, just <a href="' . get_option('siteurl')
+			. '/wp-login.php">login with <span class="openid_link">OpenID</span>!</a></p></form>';
 		$form = preg_replace( '#</form>#', $newform, $form, 1 );
 		return $form;
 	}
 	
 	/* Hook. Add information about registration to wp-login.php?action=register */
-	function openid_wp_register_v2() {
-		?><p>For faster registration, just <a style="color:white;" href="?">login with <img src="<?php echo OPENIDIMAGE; ?>" />OpenID!</a></p><?php
+	function register_v2() {
+		?><p>For faster registration, just <a href="<?php echo get_option('siteurl'); ?>/wp-login.php">login with <span class="openid_link">OpenID</span>!</a></p><?php
 	}
 
 	/*
 	 * Hook. Add sidebar login form, editing Register link.
 	 * Turns SiteAdmin into Profile link in sidebar.
 	 */
-	function openid_wp_sidebar_register( $link ) {
+	function sidebar_register( $link ) {
 			global $current_user;
 			if( !$current_user->has_cap('edit_posts')  ) {
-				$link = preg_replace( '#<a href="' . get_settings('siteurl') . '/wp-admin/">Site Admin</a>#', '<a href="' . get_settings('siteurl') . '/wp-admin/profile.php">' . __('Profile') . '</a>', $link );
+				$link = preg_replace( '#<a href="' . get_option('siteurl') . '/wp-admin/">Site Admin</a>#', '<a href="' . get_option('siteurl') . '/wp-admin/profile.php">' . __('Profile') . '</a>', $link );
 			}
 			if( $current_user->ID ) {
-				$chunk ='<li class="wpopenid_login_item">Logged in as '
-					. ( is_user_openid()
-					  ? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
-					. ( !empty($current_user->user_url)
-					  ? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
-					  : htmlentities( $current_user->display_name )   ) . '</li>';
-			
+				$userdisplay = htmlentities( $current_user->display_name );
+				if( !empty($current_user->user_url)) {
+					$userdisplay = '<a href="' . $current_user->user_url . '"' . ( is_user_openid() ? ' class="openid_link"' : '') . '>'.  $userdisplay . '</a>';
+				}
+				$chunk ='Logged in as ' . $userdisplay;
 			} else {
-				$style = get_option('oid_enable_selfstyle') ? ('style="border: 1px solid #ccc; background: url('.OPENIDIMAGE.') no-repeat;
-					background-position: 0 50%; padding-left: 18px; " ') : '';
-				$chunk ='<li class="wpopenid_login_item"><form method="post" action="'.get_settings('siteurl').'/wp-login.php" style="display:inline;">
-					<input ' . $style . 'class="openid_url_sidebar" name="openid_url" size="17" />
-					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form></li>';
+				//TODO: this needs a new configurable option... personally, I //don't like having an input field in the sidebar like this
+				$chunk ='<form method="post" action="'.get_option('siteurl').'/wp-login.php" style="display:inline;">
+					<input class="openid_url_sidebar" name="openid_url" id="openid_url" size="17" />
+					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form>';
 			}
-			return $chunk . $link;
+
+			return '<li class="wpopenid_login_item">' . $chunk . '</li>' . $link;
 	}
 
-	function openid_wp_sidebar_loginout( $link ) {
+	function sidebar_loginout( $link ) {
 		if( '' == $link ) return '';
 		if( strpos('redirect_to', $link )) return $link;
 		return str_replace( 'action=logout', 'action=logout' . ini_get('arg_separator.output') . 'redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 	
 	// Add OpenID logo beside username for theme.
-	function openid_comment_author_link_prefx( $html ) {
+	function comment_author_link_prefx( $html ) {
 		global $comment_is_openid;
 		get_comment_type();
-		if( $comment_is_openid === true )
-			return '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />' . $html;
+		if( $comment_is_openid === true ) {
+			if (preg_match('/<a[^>]* class=[^>]+>/', $html)) {
+				return preg_replace( '/(<a[^>]* class=[\'"]?)/', '\\1openid_link ' , $html );
+			} else {
+				return preg_replace( '/(<a[^>]*)/', '\\1 class="openid_link"' , $html );
+			}
+		}
 		return $html;
 	}
 	
@@ -180,25 +139,50 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	 * Hook. Add OpenID login-n-comment box above the comment form.
 	 * Uses Output Buffering to rewrite the comment form html.
 	 */
-	function setup_openid_wp_login_ob($string) {
-		ob_start( array( &$this->interface, "openid_wp_comment_form_ob" ) );
+	function setup_login_ob($string) {
+		ob_start( array( &$this->interface, "comment_form_ob" ) );
 		return $string;
 	}
 	
-	function unobtrusive_setup() {
-		# jQuery is standard in wordpress 2.2+
-		wp_register_script('jquery', 'http://code.jquery.com/jquery-latest.pack.js', null, '1.1.2');
-		wp_register_script('wpopenid', '/wp-content/plugins/wpopenid/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
+
+	function js_setup() {
+		global $wp_version;
+
+		if ( $wp_version >= '2.2' ) {
+			# jQuery is standard in wordpress 2.2+
+			wp_enqueue_script( 'jquery', '/wp-includes/js/jquery/jquery.js', false, '1.1.2');
+			wp_enqueue_script( 'interface', '/wp-includes/js/jquery/interface.js', array('jquery'), '1.2');
+		} else {
+			wp_enqueue_script( 'jquery', WPOPENID_PLUGIN_PATH . '/jquery/jquery.js', false, '1.1.3.1');
+			wp_enqueue_script( 'interface', WPOPENID_PLUGIN_PATH . '/jquery/interface.js', array('jquery'), '1.2');
+		}
+
+		wp_enqueue_script('openid', WPOPENID_PLUGIN_PATH . '/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
 	}
 
-	function unobtrusive_head() {
-		wp_print_scripts('wpopenid');
+	function style() {
+		global $wp_version;
+
+		if ( $wp_version < '2.1' ) {
+			echo '
+			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/openid.js?ver='.WPOPENID_PLUGIN_VERSION.'"></script>
+			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/jquery/jquery.js?ver=1.1.2"></script>
+			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/jquery/interface.js?ver=1.1.2"></script>
+			';
+		}
 
 		echo '
-			<link rel="stylesheet" type="text/css" href="'.get_option('siteurl').'/wp-content/plugins/wpopenid/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
+			<link rel="stylesheet" type="text/css" href="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
 	}
 
-	function openid_wp_comment_form_ob( $html ) {
+
+	function comment_form() {
+		?>
+		<script type="text/javascript">add_unobtrusive_text()</script>
+		<?php
+	}
+
+	function comment_form_ob( $html ) {
 		$block = array('address','blockquote','div','dl','span',
 			'fieldset','h1','h2','h3','h4','h5','h6',
 			'p','ul','li', 'dd','dt');
@@ -208,7 +192,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		if( $user_ID ) {
 			// Logged in already. Add the OpenID logo to the username?
 			if( is_user_openid() ) {
-				return preg_replace( '|(Logged in as (<a[^>]*>)?)|', '\\1<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />' , $html );
+				return preg_replace( '|(Logged in as )(<a ([^>]*)>)?|', '\\1<a class="openid_link" \\3>' , $html );
 			}
 			return $html;
 			
@@ -217,8 +201,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			$openid = '<form method="post" action="' . get_option('siteurl') . 
 			'/wp-login.php?redirect_to= ' .  apply_filters('the_permalink', get_permalink() ) . '#respond">
 			 <p><label for="openid_url_comment_form">You can login with your OpenID!</label><br/>
-			 <input style="background: url(' . OPENIDIMAGE . ') no-repeat;
-			 background-position: 0 50%; padding-left: 18px;" type="text" name="openid_url" tabindex="6" id="openid_url_comment_form" size="22" />
+			 <input type="text" name="openid_url" id="openid_url" tabindex="6" id="openid_url_comment_form" size="22" />
 			 <input name="submit" type="submit" value="Login" /></p>
 			</form>';
 			$html = preg_replace( '%<(' . implode('|', $block) . ')( [^>]*)?>'.
@@ -285,11 +268,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		$author = $chunks[0]['line'];
 		$author_name = trim(strip_tags($author));
 
-		$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
-			background-position: 0 50%; padding-left: 18px; " ') : '';
-			
 		$openid = str_replace(  array('name="author"', "$author_name"),
-			array( $style.'name="openid_url" class="commentform_openid"',
+			array( 'name="openid_url" class="commentform_openid"',
 			'Sign in with your OpenID <a href="http://openid.net/">?</a>'), $author );
 
 		if( preg_match( '/id="[^"]+"/', $openid )) {
@@ -348,7 +328,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			if ( isset($_POST['info_update']) ) {
 			
 				$trust = $_POST['oid_trust_root'];
-				if( $trust == null ) $trust = get_settings('siteurl');
+				if( $trust == null ) $trust = get_option('siteurl');
 				
 				$error = '';
 				if( $trust = clean_url($trust) ) {
@@ -421,51 +401,14 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			}
 
 			
-			/* Check for updates via SF RSS feed */
-			/*
-			@include_once (ABSPATH . WPINC . '/rss.php');
-			@include_once (ABSPATH . WPINC . '/rss-functions.php');
-			$plugins = get_plugins();
-			$matches = array();
-			if( function_exists( 'fetch_simplepie' )) {
-				$rss = @fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
-				if ( $rss and $rss->get_item_quantity() > 0 ) {
-					$items = $rss->get_items(0,0);
-					preg_match( '/wpopenid ([^ ]+) released/', $items[0]->get_title(), $matches );
-				}
-			} elseif ( function_exists( 'fetch_rss' )) {
-				$rss = @fetch_rss('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
-				if( isset( $rss->items ) and 0 != count( $rss->items )) {
-					preg_match( '/wpopenid ([^ ]+) released/', $rss->items[0]['title'], $matches );
-				}
-			}
-
-
-			$vercmp_message = 'Running version ' . (int)WPOPENID_PLUGIN_VERSION . '. ';
-			if( $matches[1] ) {
-				$vercmp_message .= "Latest stable release is $matches[1]. ";
-				switch( version_compare( (int)WPOPENID_PLUGIN_VERSION, (int)$matches[1] ) ) {
-					case 1: $vercmp_message .= 'This revision is newer than the latest stable.'; break;
-					case 0: $vercmp_message .= 'Up to date.'; break;
-					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
-				}
-			} else {
-				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
-			}
-			 */
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
 			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
 			
 			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
 
-			?>
-			<style>
-				div#openidrollup:hover dl { display: block; }
-				div#openidrollup dl { display: none; }
-			</style>
-			<?php
+
 			if( $this->logic->enabled ) {	// Display status information
-				?><div id="openidrollup" class="updated"><p><strong>Status information:</strong> All Systems Nominal</p><?php
+				?><div id="openid_rollup" class="updated"><p><strong>Status information:</strong> All Systems Nominal <small>(<a href="#" id="openid_rollup_link">Toggle More/Less</a>)</small> </p><?php
 			} else {
 				?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
 			}
@@ -486,7 +429,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			
 			
 			// Display the options page form
-			$siteurl = get_settings('siteurl');
+			$siteurl = get_option('siteurl');
 			if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 			?>
 			<form method="post"><div class="wrap">
@@ -633,52 +576,5 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
  }
 }
 
-/* Exposed functions, designed for use in templates.
- * Specifically inside `foreach ($comments as $comment)` in comments.php
- */
-
-
-/*  get_comment_openid()
- *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
- */
-if( !function_exists( 'get_comment_openid' ) ) {
-	function get_comment_openid() {
-		global $comment_is_openid;
-		get_comment_type();
-		if( $comment_is_openid === true ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
-	}
-}
-
-/* is_comment_openid()
- * If the current comment was submitted with OpenID, return true
- * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
- */
-if( !function_exists( 'is_comment_openid' ) ) {
-	function is_comment_openid() {
-		global $comment_is_openid;
-		get_comment_type();
-		return ( $comment_is_openid === true );
-	}
-}
-
-if( !function_exists( 'mask_comment_type' ) ) {
-	function mask_comment_type( $comment_type ) {
-		global $comment_is_openid;
-		if( $comment_type === 'openid' ) {
-			$comment_is_openid = true;
-			return 'comment';
-		}
-		$comment_is_openid = false;
-		return $comment_type;
-	}
-	add_filter('get_comment_type', 'mask_comment_type' );
-}
-
-if( !function_exists('is_user_openid') ) {
-	function is_user_openid() {
-		global $current_user;
-		return ( null !== $current_user && get_usermeta($current_user->ID, 'registered_with_openid') );
-	}
-}
 
 ?>
