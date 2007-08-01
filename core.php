@@ -11,7 +11,6 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 
 #define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/' . basename(dirname(__FILE__)) );  
 define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
-define ( 'OPENIDIMAGE', get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/images/openid.gif' );
 
 define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
@@ -36,14 +35,18 @@ if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 
 if  ( !class_exists('WordpressOpenID') ) {
 	class WordpressOpenID {
+		var $path;
+		var $fullpath;
 
 		var $logic;
 		var $interface;
 
 		function __construct() {
+			$this->interface = new WordpressOpenIDInterface($this);
 			$this->logic = new WordpressOpenIDLogic();
-			$this->interface = new WordpressOpenIDInterface();
-			$this->interface->logic =& $this->logic;
+
+			$this->path = '/wp-content/plugins/openid';
+			$this->fullpath = get_option('siteurl').$this->path;
 		}
 
 		function startup() {
@@ -81,15 +84,14 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'init', array( $this->interface, 'js_setup'));
 
 			if( get_option('oid_enable_commentform') ) {
-				add_filter( 'comments_template', array( $this->interface, 'setup_login_ob'));
 				add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link_prefx'));
 				add_action( 'comment_form', array( $this->interface, 'comment_form'));
 			}
 
 			if( get_option('oid_enable_loginform') ) {
-				add_action( 'login_form', array( $this->interface, 'login_form_v2_insert_fields'));
-				add_action( 'register_form', array( $this->interface, 'register_v2'));
-				add_filter( 'login_errors', array( $this->interface, 'login_form_v2_hide_username_password_errors'));
+				add_action( 'login_form', array( $this->interface, 'login_form'));
+				add_action( 'register_form', array( $this->interface, 'register_form'));
+				add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
 				add_filter( 'register', array( $this->interface, 'sidebar_register' ));
 			}
 			add_filter( 'loginout', array( $this->interface, 'sidebar_loginout' ));

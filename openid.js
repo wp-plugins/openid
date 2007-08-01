@@ -42,7 +42,7 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 		jQuery('#commentform input#url/..').clone().appendTo( jQuery('#openid_fieldset') );
 		jQuery('#openid_fieldset input').attr('id', 'openid_url').val("");
 		jQuery('#openid_fieldset label').attr('for', 'openid_url');
-		jQuery('#openid_fieldset label *').text('Sign in with your OpenID');
+		jQuery('#openid_fieldset label *').html('Sign in with your <a title="What is this?" href="http://www.openid.net">OpenID</a>');
 	}
 }
 

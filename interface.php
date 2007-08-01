@@ -10,8 +10,13 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
   class WordpressOpenIDInterface {
 
 	var $logic;  // Hold core logic instance
-	var $__flag_use_Viper007Bond_login_form = false;
+	var $core;  // Hold core instance
 	
+	function __construct($core) {
+		$this->core =& $core;
+		$this->logic =& $this->core->logic;
+	}
+
 	function startup() {
 		global $wordpressOpenIDRegistration_Status;
 		
@@ -37,15 +42,14 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		
 	}
 	
-	function login_form_v2_hide_username_password_errors($r) {
+	function login_form_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
 			or $_GET['action'] == 'loginopenid'
 			or $_GET['action'] == 'commentopenid' ) return $this->logic->error;
 		return $r;
 	}
 
-	function login_form_v2_insert_fields() {
-		$this->interface->__flag_use_Viper007Bond_login_form = true;
+	function login_form() {
 		?>
 		<hr />
 		<p>
@@ -55,38 +59,9 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		<?php
 	}
 
-	/*  Output Buffer handler
-	 *  @param $form - String of html
-	 *  @return - String of html
-	 *  Replaces parts of the wp-login.php form.
-	 */
-	function login_ob( $form ) {
-		if( $this->interface->__flag_use_Viper007Bond_login_form ) return $form;
 
-		global $redirect_to;
-
-		$newform = '<h2>WordPress User</h2>';
-		$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
-		
-		$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
-			.__('OpenID Identity Url:').
-			' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' 
-			.'type="text" class="input openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
-		$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
-		return $form;
-	}
-
-
-	/* Hook. Add information about OpenID registration to wp-register.php */
-	function register_ob($form) {
-		$newform = '<p>For faster registration, just <a href="' . get_option('siteurl')
-			. '/wp-login.php">login with <span class="openid_link">OpenID</span>!</a></p></form>';
-		$form = preg_replace( '#</form>#', $newform, $form, 1 );
-		return $form;
-	}
-	
 	/* Hook. Add information about registration to wp-login.php?action=register */
-	function register_v2() {
+	function register_form() {
 		?><p>For faster registration, just <a href="<?php echo get_option('siteurl'); ?>/wp-login.php">login with <span class="openid_link">OpenID</span>!</a></p><?php
 	}
 
@@ -106,7 +81,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 				}
 				$chunk ='Logged in as ' . $userdisplay;
 			} else {
-				//TODO: this needs a new configurable option... personally, I //don't like having an input field in the sidebar like this
+				//TODO: this needs a new configurable option... personally, I 
+				//don't like having an input field in the sidebar like this
 				$chunk ='<form method="post" action="'.get_option('siteurl').'/wp-login.php" style="display:inline;">
 					<input class="openid_url_sidebar" name="openid_url" id="openid_url" size="17" />
 					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form>';
@@ -135,16 +111,6 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		return $html;
 	}
 	
-	/*
-	 * Hook. Add OpenID login-n-comment box above the comment form.
-	 * Uses Output Buffering to rewrite the comment form html.
-	 */
-	function setup_login_ob($string) {
-		ob_start( array( &$this->interface, "comment_form_ob" ) );
-		return $string;
-	}
-	
-
 	function js_setup() {
 		global $wp_version;
 
@@ -153,11 +119,11 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			wp_enqueue_script( 'jquery', '/wp-includes/js/jquery/jquery.js', false, '1.1.2');
 			wp_enqueue_script( 'interface', '/wp-includes/js/jquery/interface.js', array('jquery'), '1.2');
 		} else {
-			wp_enqueue_script( 'jquery', WPOPENID_PLUGIN_PATH . '/jquery/jquery.js', false, '1.1.3.1');
-			wp_enqueue_script( 'interface', WPOPENID_PLUGIN_PATH . '/jquery/interface.js', array('jquery'), '1.2');
+			wp_enqueue_script( 'jquery', $this->core->path . '/jquery/jquery.js', false, '1.1.3.1');
+			wp_enqueue_script( 'interface', $this->core->path . '/jquery/interface.js', array('jquery'), '1.2');
 		}
 
-		wp_enqueue_script('openid', WPOPENID_PLUGIN_PATH . '/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('openid', $this->core->path . '/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
 	}
 
 	function style() {
@@ -165,21 +131,19 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 		if ( $wp_version < '2.1' ) {
 			echo '
-			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/openid.js?ver='.WPOPENID_PLUGIN_VERSION.'"></script>
-			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/jquery/jquery.js?ver=1.1.2"></script>
-			<style type="text/javascript" src="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/jquery/interface.js?ver=1.1.2"></script>
+			<style type="text/javascript" src="' . $this->core->fullpath . '/openid.js?ver='.WPOPENID_PLUGIN_VERSION.'"></script>
+			<style type="text/javascript" src="' . $this->core->fullpath . '/jquery/jquery.js?ver=1.1.2"></script>
+			<style type="text/javascript" src="' . $this->core->fullpath . '/jquery/interface.js?ver=1.1.2"></script>
 			';
 		}
 
 		echo '
-			<link rel="stylesheet" type="text/css" href="' . get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
+			<link rel="stylesheet" type="text/css" href="' . $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
 	}
 
 
 	function comment_form() {
-		?>
-		<script type="text/javascript">add_openid_to_comment_form(<?php echo get_option('oid_enable_unobtrusive')?'true':'false'?>)</script>
-		<?php
+		echo '<script type="text/javascript">add_openid_to_comment_form('.(get_option('oid_enable_unobtrusive')?'true':'false').')</script>';
 	}
 
 

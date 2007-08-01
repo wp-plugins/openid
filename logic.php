@@ -225,7 +225,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Hook - called as wp_authenticate
 		 * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
 		 * Otherwise, return and let Wordpress handle the login and/or draw the form.
-		 * Uses output buffering to modify the form. See openid_wp_login_ob()
+		 * Uses output buffering to modify the form. 
 		 */
 		function wp_authenticate( &$username ) {
 			if( !empty( $_POST['openid_url'] ) ) {
@@ -237,11 +237,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( !empty( $this->error ) ) {
 				global $error;
 				$error = $this->error;
-			}
-			
-			if( get_option('oid_enable_loginform') ) {
-				global $wordpressOpenIDRegistrationUI;
-				ob_start( array( &$wordpressOpenIDRegistrationUI, 'login_ob' ) );
 			}
 		}
 
@@ -481,8 +476,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			switch ( $self ) {
 				case 'wp-login.php':
 					if( $action == 'register' ) {
-						global $wordpressOpenIDRegistrationUI;
-						ob_start( array( &$wordpressOpenIDRegistrationUI, 'register_ob' ) );
 						return;
 					}
 					if ( !isset( $_GET['openid_mode'] ) ) return;
@@ -493,8 +486,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					
 
 				case 'wp-register.php':
-					global $wordpressOpenIDRegistrationUI;
-					ob_start( array( &$wordpressOpenIDRegistrationUI, 'register_ob' ) );
 					return;
 
 				default:
