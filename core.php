@@ -78,9 +78,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'wp_head', array( $this->interface, 'style'));
 			add_action( 'login_head', array( $this->interface, 'style'));
 
-			if( get_option('oid_enable_unobtrusive') ) {
-				add_action( 'init', array( $this->interface, 'js_setup'));
-			}
+			add_action( 'init', array( $this->interface, 'js_setup'));
 
 			if( get_option('oid_enable_commentform') ) {
 				add_filter( 'comments_template', array( $this->interface, 'setup_login_ob'));
