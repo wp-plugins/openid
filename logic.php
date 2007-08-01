@@ -957,7 +957,7 @@ if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("-------------------wpopenid--
 wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_log') ? ("Logging errors via PHP's error_log faculty to: " . ini_get('error_log')) : "PHP error_log is not set." );
 
 $wordpressOpenIDRegistration_Required_Files = array(
-	'openid-registration.php' => 'Came with the plugin, but not found in include path. Did you remeber to upload it?',
+	'logic.php' => 'Came with the plugin, but not found in include path. Did you remeber to upload it?',
 	'Services/Yadis/PlainHTTPFetcher.php' => 'Do you have the <a href="http://www.openidenabled.com/yadis/libraries/php/">JanRain PHP Yadis library</a> installed in your path? (Comes with the OpenID library.)',
 	'Services/Yadis/Yadis.php' => 'Do you have the <a href="http://www.openidenabled.com/yadis/libraries/php/">JanRain PHP Yadis library</a> installed in your path? (Comes with the OpenID library.)',
 	'Auth/OpenID.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
