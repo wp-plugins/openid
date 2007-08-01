@@ -16,8 +16,8 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 define ( 'WPOPENID_DB_VERSION', 11258);
 
-@include_once('logic.php');
-@include_once('interface.php');
+require_once('logic.php');
+require_once('interface.php');
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -36,29 +36,26 @@ if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 if  ( !class_exists('WordpressOpenID') ) {
 	class WordpressOpenID {
 
-		//var $logic;
+		var $logic;
 		var $interface;
 
-		function startup() {
-			global $interface;
-			
-			/* Instantiate User Interface class */
-			if( class_exists('WordpressOpenIDRegistrationUI')) {
-				$interface = new WordpressOpenIDRegistrationUI();
-				$interface->startup();
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($interface->oid->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
-			} else {
-				update_option('oid_plugin_enabled', false);
-				wp_die('<div class="error"><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>');
-			}
+		function __construct() {
+			$this->logic = new WordpressOpenIDLogic();
+			$this->interface = new WordpressOpenIDInterface();
+			$this->interface->logic =& $this->logic;
+		}
 
+		function startup() {
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($this->interface->oid->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
+
+			$this->interface->startup();
 		}
 
 
 	}
 }
 
-if (isset($wp_version) && class_exists('WordpressOpenID')) {
+if (isset($wp_version)) {
 	$openid = new WordpressOpenID();
 	$openid->startup();
 }

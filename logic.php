@@ -1,6 +1,6 @@
 <?php
-if  ( !class_exists('WordpressOpenIDRegistration') ) {
-	class WordpressOpenIDRegistration {
+if  ( !class_exists('WordpressOpenIDLogic') ) {
+	class WordpressOpenIDLogic {
 
 		var $_store;	// Hold the WP_OpenIDStore and
 		var $_consumer; // Auth_OpenID_Consumer internally.
