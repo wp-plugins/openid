@@ -67,6 +67,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$this->enabled = false;
 			}
 			
+			/*
 			$loaded_long_integer_library = false;
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
@@ -76,6 +77,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					define( Auth_OpenID_NO_MATH_SUPPORT, true );
 				}
 			}
+			 */
 			
 
 			if( !class_exists('WP_OpenIDStore') ) {
@@ -152,10 +154,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				user_id bigint(20) NOT NULL default '0',
 				url text,
 				hash char(32),
-				PRIMARY KEY (uurl_id),
+				PRIMARY KEY  (uurl_id),
 				UNIQUE KEY uurl (hash),
-				INDEX ( url(30) ),
-				INDEX ( user_id) );";
+				KEY url (url(30)),
+				KEY user_id (user_id)
+				);";
 			
 			dbDelta($identity_url_table_sql);
 		}
@@ -949,10 +952,8 @@ wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_
 
 $wordpressOpenIDRegistration_Required_Files = array(
 	'logic.php' => 'Came with the plugin, but not found in include path. Did you remeber to upload it?',
-	'Services/Yadis/PlainHTTPFetcher.php' => 'Do you have the <a href="http://www.openidenabled.com/yadis/libraries/php/">JanRain PHP Yadis library</a> installed in your path? (Comes with the OpenID library.)',
-	'Services/Yadis/Yadis.php' => 'Do you have the <a href="http://www.openidenabled.com/yadis/libraries/php/">JanRain PHP Yadis library</a> installed in your path? (Comes with the OpenID library.)',
 	'Auth/OpenID.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/Discover.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Auth/OpenID/Sreg.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/DatabaseConnection.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/MySQLStore.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'wpdb-pear-wrapper.php' => 'Came with the plugin, but not found in include path.  Did you remeber to upload it?',

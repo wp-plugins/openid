@@ -218,6 +218,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
 			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
 
+			/*
 			$loaded_long_integer_library = false;
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
@@ -226,6 +227,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			} else {
 				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
 			}
+			 */
 			
 			if( defined( 'Auth_OpenID_NO_MATH_SUPPORT' ) ) {
 				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
