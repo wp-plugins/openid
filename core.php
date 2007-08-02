@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Wordpress OpenID (+)
+Plugin Name: -Wordpress OpenID (+)
 Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
@@ -14,7 +14,7 @@ define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
 
 define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
-define ( 'WPOPENID_DB_VERSION', 11258);
+define ( 'WPOPENID_DB_VERSION', 11260);
 
 require_once('logic.php');
 require_once('interface.php');
@@ -24,7 +24,7 @@ require_once('interface.php');
  * For production use, leave this set to false.
  */
 
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
+define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', false );
 if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
 	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
@@ -59,7 +59,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'admin_menu', array( $this->interface, 'add_admin_panels' ) );
 
 			// Kickstart
-			register_activation_hook( 'openid/core.php', array( $this->logic, 'late_bind' ) );
+			register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
+			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'destroy_tables' ) );
 
 			// Add hooks to handle actions in Wordpress
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start

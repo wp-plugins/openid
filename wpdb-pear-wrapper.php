@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Auth/OpenID/MySQLStore.php';
+
 if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
@@ -10,6 +12,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         parent::Auth_OpenID_MySQLStore(
             $conn,
             $wpdb->prefix . 'openid_associations',
+            $wpdb->prefix . 'openid_settings',
             $wpdb->prefix . 'openid_nonces');
     }
 
@@ -52,7 +55,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $this->sql['nonce_table'] =
             "
 CREATE TABLE %s (
-  server_url varchar(2047),
+  server_url blob,
   timestamp int(11),
   salt char(40),
   UNIQUE KEY server_url (server_url(255),timestamp,salt)

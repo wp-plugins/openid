@@ -10,13 +10,12 @@ jQuery(document).ready( function() {
 	jQuery('#openid_rollup dl').toggle();
 
 	jQuery('#openid_rollup_link').click( function() {
-		jQuery('#openid_rollup dl').toggle(400); 
+		jQuery('#openid_rollup dl').toggle(); 
 		return false;
 	});
 });
 
 function add_openid_to_comment_form(unobtrusive_mode) {
-
 	jQuery('#commentform').addClass('openid');
 
 	if (unobtrusive_mode == true) {

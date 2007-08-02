@@ -116,8 +116,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 		if ( $wp_version >= '2.2' ) {
 			# jQuery is standard in wordpress 2.2+
-			wp_enqueue_script( 'jquery', '/wp-includes/js/jquery/jquery.js', false, '1.1.2');
-			wp_enqueue_script( 'interface', '/wp-includes/js/jquery/interface.js', array('jquery'), '1.2');
+			wp_enqueue_script( 'jquery' );
+			wp_enqueue_script( 'interface' );
 		} else {
 			wp_enqueue_script( 'jquery', $this->core->path . '/jquery/jquery.js', false, '1.1.3.1');
 			wp_enqueue_script( 'interface', $this->core->path . '/jquery/interface.js', array('jquery'), '1.2');
@@ -128,14 +128,6 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 	function style() {
 		global $wp_version;
-
-		if ( $wp_version < '2.1' ) {
-			echo '
-			<style type="text/javascript" src="' . $this->core->fullpath . '/openid.js?ver='.WPOPENID_PLUGIN_VERSION.'"></script>
-			<style type="text/javascript" src="' . $this->core->fullpath . '/jquery/jquery.js?ver=1.1.2"></script>
-			<style type="text/javascript" src="' . $this->core->fullpath . '/jquery/interface.js?ver=1.1.2"></script>
-			';
-		}
 
 		echo '
 			<link rel="stylesheet" type="text/css" href="' . $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
