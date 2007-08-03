@@ -16,6 +16,9 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 define ( 'WPOPENID_DB_VERSION', 11260);
 
+//set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
+error_log(get_include_path());
+
 require_once('logic.php');
 require_once('interface.php');
 
@@ -24,7 +27,7 @@ require_once('interface.php');
  * For production use, leave this set to false.
  */
 
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', false );
+define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
 	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
@@ -96,6 +99,18 @@ if  ( !class_exists('WordpressOpenID') ) {
 				add_filter( 'register', array( $this->interface, 'sidebar_register' ));
 			}
 			add_filter( 'loginout', array( $this->interface, 'sidebar_loginout' ));
+
+
+			// Add custom OpenID options
+			add_option( 'oid_trust_root', get_settings('siteurl'), 'The Open ID trust root' );
+			add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
+			add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
+			add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
+			add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
+			add_option( 'oid_plugin_version', 0, 'OpenID plugin version' );
+			add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
+			add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
+			add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
 		}
 
 
@@ -106,6 +121,23 @@ if (isset($wp_version)) {
 	$openid = new WordpressOpenID();
 	$openid->startup();
 }
+
+
+/* State of the Plugin */
+$wordpressOpenIDRegistration_Status = array();
+
+function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
+	global $wordpressOpenIDRegistration_Status;
+	$wordpressOpenIDRegistration_Status[$slug] = array('state'=>$state,'message'=>$message);
+	if( !$state or WORDPRESSOPENIDREGISTRATION_DEBUG ) {
+		if( $state === true ) { $_state = 'ok'; }
+		elseif( $state === false ) { $_state = 'fail'; }
+		else { $_state = ''.($state); }
+		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
+	}
+}
+
+
 
 
 /* Exposed functions, designed for use in templates.

@@ -28,6 +28,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 		function getStore() {
 			if (!isset($this->_store)) {
+				require_once 'wpdb-pear-wrapper.php';
+
 				$this->_store = new WP_OpenIDStore();
 				if (null === $this->_store) {
 					wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
@@ -357,9 +359,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						</html>
 					<?php
 				}
-
 			}
-
 		}
 
 		
@@ -510,7 +510,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			/* If we've never heard of this url before, add the SREG extension.
 				NOTE: Anonymous clients could attempt to authenticate with a series of OpenID urls, and
 				the presence or lack of SREG exposes whether a given OpenID has an account at this site. */
-				
 			if( $this->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
 				$sreg_request = Auth_OpenID_SRegRequest::build(
 					// required
@@ -601,6 +600,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					}
 
 				}
+			} else {
+				//XXX: option to comment anonymously
+				$this->error = "We were unable to authenticate your OpenID";
 			}
 			
 
@@ -699,12 +701,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					$oid_user_data['display_name'] = $sreg['fullname'];
 				}
 			} else {
-				if( isset( $_SESSION['oid_comment_author_email'])) $oid_user_data['user_email'] = $_SESSION['oid_comment_author_email'];
-				if( isset( $_SESSION['oid_comment_author_name'])) {
-					$namechunks = explode( ' ', $_SESSION['oid_comment_author_name'], 2 );
+				$comment = get_comment();
+				if( isset( $comment['comment_author_email'])) $oid_user_data['user_email'] = $comment['comment_author_email'];
+				if( isset( $comment['comment_author'])) {
+					$namechunks = explode( ' ', $comment['comment_author'], 2 );
 					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
 					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
-					$oid_user_data['display_name'] = $_SESSION['oid_comment_author_name'];
+					$oid_user_data['display_name'] = $comment['comment_author'];
 				}
 			}
 
@@ -718,8 +721,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			 * Post it and redirect to the permalink.
 			 */
 			
-			$comment_content = $this->comment_get_cookie();
-			$this->comment_clear_cookie();
+			$comment = $this->get_comment();
+			$comment_content = $comment['comment_content'];
+			$this->clear_comment();
 			
 			if ( '' == trim($comment_content) )
 				die( __('Error: please type a comment.') );
@@ -764,12 +768,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			error_log(var_export($_SESSION, true));
 			if ( !$user_id ) :
-				setcookie('comment_author_' . COOKIEHASH, $_SESSION['oid_comment_author_name'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_email_' . COOKIEHASH, $_SESSION['oid_comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_url_' . COOKIEHASH, clean_url($_SESSION['oid_comment_author_url']), time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_' . COOKIEHASH, $comment['comment_author'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_email_' . COOKIEHASH, $comment['comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_url_' . COOKIEHASH, clean_url($comment['comment_author_url']), time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 
 				// save openid url in a separate cookie so wordpress doesn't muck with it when we read it back in later
-				setcookie('comment_author_openid_' . COOKIEHASH, $_SESSION['oid_comment_author_url'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_openid_' . COOKIEHASH, $comment['comment_author_openid'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 			endif;
 				
 			$comment_id = wp_new_comment( $commentdata );
@@ -778,21 +782,18 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		/* These functions are used to store the comment
-		 * in a cookie temporarily while doing an
-		 * OpenID redirect loop.
+		 * temporarily while doing an OpenID redirect loop.
 		 */
-		
-		function comment_set_cookie( $content ) {
-			$commenttext = trim( $content );
-			$_SESSION['oid_comment_content'] = $commenttext;
+		function set_comment( $content ) {
+			$_SESSION['oid_comment'] = $content;
 		}
 
-		function comment_clear_cookie( ) {
-			unset($_SESSION['oid_comment_content']);
+		function clear_comment( ) {
+			unset($_SESSION['oid_comment']);
 		}
 
-		function comment_get_cookie( ) {
-			return trim($_SESSION['oid_comment_content']);
+		function get_comment( ) {
+			return $_SESSION['oid_comment'];
 		}
 
 		/* Called when comment is submitted by get_option('require_name_email') */
@@ -824,23 +825,25 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/*
 		 * Called when comment is submitted via preprocess_comment hook.
 		 * Set the comment_type to 'openid', so it can be drawn differently by theme.
-		 * If comment is submitted along with an openid url, store comment in cookie, and do authentication.
+		 * If comment is submitted along with an openid url, store comment, and do authentication.
+		 *
+		 * regarding comment_type: http://trac.wordpress.org/ticket/2659
 		 */
 		function comment_tagging( $comment ) {
-			global $current_user;		
+			global $current_user;
+
+			if (!$this->enabled) return $comment;
 			
 			if( get_usermeta($current_user->ID, 'registered_with_openid') ) {
 				$comment['comment_type']='openid';
 			}
 			
+			//error_log(var_dump($comment, true));
 			$url_field = (get_option('oid_enable_unobtrusive') ? 'url' : 'openid_url');
 
 			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
-				if( !$this->late_bind(true) ) return; // something is broken
-				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
-				$_SESSION['oid_comment_author_name'] = $comment['comment_author'];
-				$_SESSION['oid_comment_author_email'] = $comment['comment_author_email'];
-				$_SESSION['oid_comment_author_url'] = $_POST[$url_field];
+				$comment['comment_author_openid'] = $_POST[$url_field];
+				$this->set_comment($comment);
 				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
@@ -901,7 +904,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * name and email address stored in the user's cookies match those on 
 		 * the comment.  This is a problem since if the user logged in with 
 		 * OpenID, they may never have filled out the name and email input 
-		 * fields but there comment _will_ have values resulting in them never 
+		 * fields but their comment _will_ have values resulting in them never 
 		 * seeing their comment.  
 		 *
 		 * This filter performs an additional query if the current user is 
@@ -952,55 +955,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 	} // end class definition
 } // end if-class-exists test
 
-
-
-/* Bootstap operations */
-
-/* Check whether the specified file exists somewhere in PHP's path.
- * Used for sanity-checking require() or include().
- */
-/*  // Disabled in favour of @include_once()
-if( !function_exists( 'file_exists_in_path' ) ) {
-	function file_exists_in_path ($file) {
-		if (DIRECTORY_SEPARATOR !== '/') $file = str_replace ( '/', DIRECTORY_SEPARATOR, $file );
-		if( file_exists( $file ) ) return $file;
-		$paths = explode(PATH_SEPARATOR, get_include_path());
-		foreach ($paths as $path) {
-			$fullpath = $path . DIRECTORY_SEPARATOR . $file;
-			if( substr( $path, 0, 1 ) == '.' && substr( $path, 0, 1 ) != '..' ) // Suggested by John Arnold
-				$fullpath = dirname( __FILE__ ) . DIRECTORY_SEPARATOR . $fullpath;
-			if (file_exists($fullpath)) return $fullpath;
-		}
-		return false;
-	}
-}
-*/
-
-/* State of the Plugin */
-$wordpressOpenIDRegistration_Status = array();
-
-function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
-	global $wordpressOpenIDRegistration_Status;
-	$wordpressOpenIDRegistration_Status[$slug] = array('state'=>$state,'message'=>$message);
-	if( !$state or WORDPRESSOPENIDREGISTRATION_DEBUG ) {
-		if( $state === true ) { $_state = 'ok'; }
-		elseif( $state === false ) { $_state = 'fail'; }
-		else { $_state = ''.($state); }
-		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
-	}
-}
-
-if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("-------------------wpopenid-------------------");
-wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_log') ? ("Logging errors via PHP's error_log faculty to: " . ini_get('error_log')) : "PHP error_log is not set." );
-
 $wordpressOpenIDRegistration_Required_Files = array(
-	'logic.php' => 'Came with the plugin, but not found in include path. Did you remeber to upload it?',
-	'Auth/OpenID.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/Sreg.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Auth/OpenID/Discover.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/DatabaseConnection.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/MySQLStore.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'wpdb-pear-wrapper.php' => 'Came with the plugin, but not found in include path.  Did you remeber to upload it?',
-	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'
+	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Auth/OpenID/Sreg.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	);
 
 
@@ -1009,11 +969,12 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 	 * classes or functions in the library, and some are not. We're going to 
 	 * permit only the required global variables to be created.
 	 */
-	global $__Auth_Yadis_defaultParser, $__Services_Yadis_xml_extensions,
-		$_Services_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
+	global $__Auth_Yadis_defaultParser, $__Auth_Yadis_xml_extensions,
+		$_Auth_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
 		$XRI_AUTHORITIES, $_escapeme_re, $_xref_re, $__Auth_OpenID_PEAR_AVAILABLE,
-		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN, $Auth_OpenID_OPENID_PROTOCOL_FIELDS,
-		$Auth_OpenID_registered_aliases, $Auth_OpenID_sreg_data_fields, $Auth_OpenID_SKEW;
+		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN,
+		$Auth_OpenID_OPENID_PROTOCOL_FIELDS, $Auth_OpenID_registered_aliases, $Auth_OpenID_SKEW,
+		$Auth_OpenID_sreg_data_fields;
 	$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
 	$___local_variables = array_keys( get_defined_vars() );
 	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
@@ -1034,19 +995,4 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 		wordpressOpenIDRegistration_Status_Set('unknown library variable: '.$___v, false, 'This library variable is unknown, left unset.' );
 	}
 }
-
-/* Load required libraries into global context. */
-//wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files );
-
-/* Add custom OpenID options */
-add_option( 'oid_trust_root', get_settings('siteurl'), 'The Open ID trust root' );
-add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
-add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
-add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
-add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
-add_option( 'oid_plugin_version', 0, 'OpenID plugin version' );
-add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
-add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
-add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
-
 ?>

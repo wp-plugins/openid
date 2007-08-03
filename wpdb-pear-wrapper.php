@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Auth/OpenID/DatabaseConnection.php';
+require_once 'Auth/OpenID/SQLStore.php';
 require_once 'Auth/OpenID/MySQLStore.php';
 
 if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
