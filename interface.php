@@ -268,6 +268,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      				<fieldset class="options">
      									
      					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
+
      					<tr valign="top"><th style="width: 10em;">
      						<p><label for="oid_trust_root">Trust root:</label></p>
      					</th><td>
@@ -279,6 +280,28 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      						This should probably be <strong><?php echo $siteurl; ?></strong></p>
      					</td></tr>
      					
+     					<tr valign="top"><th>
+     						<p><label for="enable_localaccounts">Local Accounts:</label></p>
+     					</th><td>
+     						<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
+							if ( get_option('users_can_register') ) {
+     							if ( get_option('oid_enable_localaccounts') ) echo 'checked="checked"';
+							} else {
+								echo 'disabled="disabled"';
+							}
+     						?> />
+     						<label for="enable_localaccounts">Create Local Accounts</label>
+							<?php if (!get_option('users_can_register')) 
+								  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
+							</p>
+
+							<p>If enabled, a local wordpress account will automatically be created for each commenter 
+							who uses an OpenID.  Even with this option disabled, you may allow users to create local 
+							wordpress accounts using their OpenID by enabling "<a href="?">Anyone can register</a>" as 
+							well as "Login Form" below.</p>
+
+     					</td></tr>
+
      					<tr valign="top"><th>
      						<p><label for="enable_loginform">Login Form:</label></p>
      					</th><td>
@@ -311,8 +334,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      						<label for="enable_selfstyle">Use Internal Style Rules</label></p>
      						<p>These rules affect the visual appearance of various OpenID login boxes,
      						such as those in the wp-login page, the comments area, and the sidebar.
-     						The included styles are tested to work with the default themes.
-     						For custom themeing, turn this off and apply your own styles to the form elements.</p>
+     						The included styles should work with most themes, but you may 
+     						turn this off and apply your own styles to the form elements instead.</p>
      					</td></tr>
 
      					<tr valign="top"><th>
@@ -329,23 +352,6 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 							comment.</p>
      					</td></tr>
 
-     					<tr valign="top"><th>
-     						<p><label for="enable_localaccounts">Local Accounts:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
-							if ( get_option('users_can_register') ) {
-     							if ( get_option('oid_enable_localaccounts') ) echo 'checked="checked"';
-							} else {
-								echo 'disabled="disabled"';
-							}
-     						?> />
-     						<label for="enable_localaccounts">Create Local Accounts</label>
-							<?php if (!get_option('users_can_register')) 
-								  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
-							</p>
-							<p>If enabled, a local wordpress account will be created for each commenter who logs in with an OpenID.</p>
-     					</td></tr>
-
      					</table>
      				</fieldset>
      				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> »" /></p>
@@ -355,7 +361,10 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 	function add_admin_panels() {
 		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
-		if( $this->logic->enabled ) add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		if( $this->logic->enabled ) {
+			$hookname =	add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+			add_action("admin_head-$hookname", array( $this, 'style' ));
+		}
 	}
 
 	function profile_panel() {
@@ -404,7 +413,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		<?php
 		}
 		?>
-		<p><form method="post">Add identity: <input name="openid_url" /> <input type="submit" value="Add" />
+		<p><form method="post">Add identity: <input id="openid_url" name="openid_url" /> <input type="submit" value="Add" />
 			<input type="hidden" name="action" value="add_identity" ></form></p>
 		</div>
 		<?php

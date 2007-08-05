@@ -82,8 +82,10 @@ if  ( !class_exists('WordpressOpenID') ) {
 			
 			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
-			add_action( 'wp_head', array( $this->interface, 'style'));
-			add_action( 'login_head', array( $this->interface, 'style'));
+			if (get_option('oid_enable_selfstyle')) {
+				add_action( 'wp_head', array( $this->interface, 'style'));
+				add_action( 'login_head', array( $this->interface, 'style'));
+			}
 
 			add_action( 'init', array( $this->interface, 'js_setup'));
 
