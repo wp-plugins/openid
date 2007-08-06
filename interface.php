@@ -320,9 +320,9 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
      						?> />
      						<label for="enable_commentform">Add OpenID url box to the WordPress
-     						post comment form. This will work for most themes derived from Kubrick.
+     						post comment form. This will work for most themes derived from Kubrick or Sandbox.
 							Template authors can tweak the comment form as mentioned in the
-							<a href="http://svn.sourceforge.net/viewvc/*checkout*/wpopenid/trunk/README">readme</a>.</p>
+							<a href="#">readme</a>.</p>
      					</td></tr>
      					
      					<tr valign="top"><th>
@@ -332,10 +332,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      						if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
      						?> />
      						<label for="enable_selfstyle">Use Internal Style Rules</label></p>
-     						<p>These rules affect the visual appearance of various OpenID login boxes,
-     						such as those in the wp-login page, the comments area, and the sidebar.
-     						The included styles should work with most themes, but you may 
-     						turn this off and apply your own styles to the form elements instead.</p>
+							<p>Include basic stylesheet for OpenID elements.  This primarily adds the OpenID logo to appropriate 
+							input fields and next to author's name of posts that were made with an OpenID.</p>
      					</td></tr>
 
      					<tr valign="top"><th>
