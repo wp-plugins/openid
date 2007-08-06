@@ -701,7 +701,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					$oid_user_data['display_name'] = $sreg['fullname'];
 				}
 			} else {
-				$comment = get_comment();
+				$comment = $this->get_comment();
 				if( isset( $comment['comment_author_email'])) $oid_user_data['user_email'] = $comment['comment_author_email'];
 				if( isset( $comment['comment_author'])) {
 					$namechunks = explode( ' ', $comment['comment_author'], 2 );
@@ -764,9 +764,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
 										'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
 
-			error_log(var_export($commentdata, true));
-
-			error_log(var_export($_SESSION, true));
+			//error_log(var_export($commentdata, true));
+			//error_log(var_export($_SESSION, true));
+			
 			if ( !$user_id ) :
 				setcookie('comment_author_' . COOKIEHASH, $comment['comment_author'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 				setcookie('comment_author_email_' . COOKIEHASH, $comment['comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
