@@ -112,23 +112,12 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	}
 	
 	function js_setup() {
-		global $wp_version;
-
-		if ( $wp_version >= '2.2' ) {
-			# jQuery is standard in wordpress 2.2+
-			wp_enqueue_script( 'jquery' );
-			wp_enqueue_script( 'interface' );
-		} else {
-			wp_enqueue_script( 'jquery', $this->core->path . '/jquery/jquery.js', false, '1.1.3.1');
-			wp_enqueue_script( 'interface', $this->core->path . '/jquery/interface.js', array('jquery'), '1.2');
-		}
-
+		wp_enqueue_script( 'jquery' );
+		wp_enqueue_script( 'interface' );
 		wp_enqueue_script('openid', $this->core->path . '/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
 	}
 
 	function style() {
-		global $wp_version;
-
 		echo '
 			<link rel="stylesheet" type="text/css" href="' . $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
 	}
