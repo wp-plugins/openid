@@ -21,30 +21,29 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 					'</div> ';
 
 		var label = jQuery('#commentform label[@for=url]');
-		var children = label.children(':visible:hastext');
+		var children = jQuery(':visible:hastext', label);
 
 		if (children.length > 0)
 			children.filter(':last').appendToText(unobtrusive_html);
-		else if (jQuery.hasText(label[0]))
+		else if (label.is(':hastext'))
 			label.appendToText(unobtrusive_html);
 		else
 			label.append(unobtrusive_html);
 
-
 		// setup action
 		jQuery('#openid_unobtrusive_text').hide();
 		jQuery('#openid_enabled_link').click( function() {
-			jQuery('#openid_unobtrusive_text').toggle(400); 
+			jQuery('#openid_unobtrusive_text').toggle(200); 
 			return false;
 		});
 	} else {
-		// Move existing form into a fieldset
-		jQuery('#commentform label:first/..').before('<fieldset id="openid_fieldset"><legend>OpenID</legend></fieldset>')
+		// Create fieldsets
+		jQuery('#commentform label:first/..')
+			.before('<fieldset id="openid_fieldset"><legend>OpenID</legend></fieldset>')
 			.before('<fieldset id="anonymous_fieldset"><legend>Anonymous</legend></fieldset>')
 
 		var fields = new Array('author', 'email', 'url');
-		var lowest_index; // track lowest tabindex
-		var label,input,index;
+		var label,input,index,lowest;
 
 		// move each field into the anonymous fieldset.  Also clone the URL field and add it to the openid fieldset.
 		for (i=0; i<fields.length; i++) {
@@ -52,7 +51,7 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 			input = jQuery('#commentform input#'+fields[i]+'/..');
 
 			index = input.children('input').attr('tabindex');
-			if (!lowest_index || index<lowest_index) lowest_index=index;
+			if (!lowest || index<lowest) lowest=index;
 
 			jQuery('#anonymous_fieldset').append(label);
 			if (input[0] != label[0]) jQuery('#anonymous_fieldset').append(input);
@@ -64,12 +63,23 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 		}
 
 		// fix up our new openid input field
-		jQuery('#openid_fieldset input').attr('id','openid_url').attr('name','openid_url').attr('tabindex', (lowest_index-1)).val('');
-		l = jQuery('#openid_fieldset label').attr('for', 'openid_url');
-		if (l.children().length > 0) l=l.children(':last');
-		l.html('Sign in with your <a title="What is this?" href="http://www.openid.net">OpenID</a>');
+		var openid_text = 'Sign in with your <a title="What is this?" href="http://www.openid.net">OpenID</a>';
+
+		jQuery('#openid_fieldset input').attr('id','openid_url')
+			.attr('name','openid_url').attr('tabindex', (lowest-1));
+
+		var label = jQuery('#openid_fieldset label').attr('for', 'openid_url');;
+		var children = jQuery(':visible:hastext', label);
+
+		if (children.length > 0)
+			children.filter(':last').html(openid_text);
+		else if (label.is(':hastext'))
+			label.replaceText(openid_text);
+		else
+			label.append(openid_text);
 
 		// fix tabindex values
-		jQuery('#commentform input[@tabindex]').each( function() { jQuery(this).attr('tabindex', parseInt(jQuery(this).attr('tabindex')) + 1); });
+		jQuery('#commentform input[@tabindex]')
+			.each( function() { jQuery(this).attr('tabindex', parseInt(jQuery(this).attr('tabindex')) + 1); });
 	}
 }
