@@ -115,6 +115,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'interface' );
 		wp_enqueue_script('openid', $this->core->path . '/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('jquery.textnode', $this->core->path . '/jquery.textnode.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
 	}
 
 	function style() {

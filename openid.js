@@ -8,20 +8,28 @@ jQuery(document).ready( function() {
 });
 
 function add_openid_to_comment_form(unobtrusive_mode) {
+
 	jQuery('#commentform').addClass('openid');
 
 	if (unobtrusive_mode == true) {
-		var unobtrusive_html = ' <a id="openid_enabled_link" href="http://openid.net">(OpenID Enabled)</a>' +
+		var unobtrusive_html = ' <a id="openid_enabled_link" href="http://openid.net">(OpenID Enabled)</a> ' +
 					'<div id="openid_unobtrusive_text">' +
 						'If you have an OpenID, you may fill it in here.  If your OpenID provider provides ' + 
 						'a name and email, those values will be used instead of the values here.  ' + 
 						'<a href="http://openid.net">Learn more about OpenID</a> or ' + 
 						'<a href="http://openid.net/wiki/index.php/Public_OpenID_providers">find an OpenID provider</a>.' +
-					'</div>';
+					'</div> ';
 
-		var u = jQuery('#commentform label[@for=url]');
-		if (u.children().length > 0) u=u.children(':last');
-		u.append(unobtrusive_html);
+		var label = jQuery('#commentform label[@for=url]');
+		var children = label.children(':visible:hastext');
+
+		if (children.length > 0)
+			children.filter(':last').appendToText(unobtrusive_html);
+		else if (jQuery.hasText(label[0]))
+			label.appendToText(unobtrusive_html);
+		else
+			label.append(unobtrusive_html);
+
 
 		// setup action
 		jQuery('#openid_unobtrusive_text').hide();
