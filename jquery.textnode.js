@@ -1,5 +1,5 @@
 jQuery.fn.appendToText = function(input) { 
-	this.each(function(){ 
+	return this.each(function(){ 
 		if (input == null || input == '') return;
 		if (this.childNodes == 0) { this.html(input); return; }
 
