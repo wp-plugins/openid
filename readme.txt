@@ -1,4 +1,4 @@
-=== OpenID ===
+=== WP-OpenID ===
 Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
