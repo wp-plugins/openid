@@ -2,7 +2,7 @@
 Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.3
+Tested up to: 2.3.1
 Stable tag: 2.0
 
 Allow the use of OpenID for authentication of users and commenters.
