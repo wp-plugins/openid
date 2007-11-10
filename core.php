@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: OpenID
-Plugin URI: http://wordpress.org/extend/plugins/
+Plugin URI: http://wordpress.org/extend/plugins/openid
 Description: Allows the use of OpenID for account registration, authentication, and commenting.  <em>By <a href="http://verselogic.net">Alan Castonguay</a>.</em>
 Author: Will Norris
 Author URI: http://willnorris.com/
