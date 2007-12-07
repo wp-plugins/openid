@@ -62,8 +62,8 @@ part of your comment form.  For the default theme, this might look like:
 	<p><input type="text" name="openid_url" id="openid_url" />
 	<label for="openid_url"><small>OpenID URL</small></label></p>
 
-The input element MUST have the name "openid_url".  Additionally, using
-"openid_url" for the id causes the field to be styled with an OpenID logo.  To
+The input element MUST have the name "openid\_url".  Additionally, using
+"openid\_url" for the id causes the field to be styled with an OpenID logo.  To
 remove this, you can override the stylesheet or simply change the element id.
 
 = How do I get help if I have a problem? =
