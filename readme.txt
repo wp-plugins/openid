@@ -96,6 +96,10 @@ automatically rebuilt with the correct values
 
 == Changelog ==
 
+= version 2.1.4 = 
+ - remove php5 dependency bug
+ - prevent jQuery from interfering with other js libraries
+
 = version 2.1.3 = 
  - address security bug mentioned [here](http://www.gnucitizen.org/blog/hijacking-openid-enabled-accounts).  Props: Sam Alexander
 
