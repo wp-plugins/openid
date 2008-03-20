@@ -254,7 +254,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * @private
 		 **/
 		function _profile_verify_identity() {
-			if ( !isset($_GET['openid_mode']) ) {
+			if ( !isset($_REQUEST['openid_mode']) ) {
 				return; // no mode? probably a spoof or bad cancel.
 			}
 
@@ -277,7 +277,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * @private
 		 **/
 		function _profile_drop_identity() {
-			$id = $_GET['id'];
+			$id = $_REQUEST['id'];
 
 			if( !isset( $id)) {
 				$this->error = 'Identity url delete failed: ID paramater missing.';
@@ -570,7 +570,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					$oid_user_data =& $this->get_user_data($identity_url);
 
-					if ($_GET['action'] == 'loginopenid') {
+					if ($_REQUEST['action'] == 'loginopenid') {
 						if ( get_option('users_can_register') ) {
 								$oid_user = $this->create_new_user($identity_url, $oid_user_data);
 						} else {
@@ -594,13 +594,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				'". ' . $this->error );
 			
 			if( $this->action == 'redirect' ) {
-				if ( !empty( $_GET['redirect_to'] )) {
-					$redirect_to = $_GET['redirect_to'];
+				if ( !empty( $_REQUEST['redirect_to'] )) {
+					$redirect_to = $_REQUEST['redirect_to'];
 				} else if ( !empty($_REQUEST['comment_post_ID']) ) {
 					$redirect_to = get_permalink($_REQUEST['comment_post_ID']);
 				}
 				
-				if( $_GET['action'] == 'commentopenid' ) {
+				if( $_REQUEST['action'] == 'commentopenid' ) {
 					$comment_id = $this->post_comment($oid_user_data);
 					$redirect_to .= '#comment-' . $comment_id;
 					$comment = get_comment($comment_id);
@@ -815,7 +815,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			
 			// Do essentially the same thing as wp-comments-post.php
 			global $wpdb;
-			$comment_post_ID = (int) $_GET['wordpressid'];
+			$comment_post_ID = (int) $_REQUEST['wordpressid'];
 			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts "
 				. "WHERE ID = '$comment_post_ID'");
 			if ( empty($status->comment_status) ) {
