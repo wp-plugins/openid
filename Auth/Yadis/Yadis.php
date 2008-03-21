@@ -318,7 +318,7 @@ class Auth_Yadis_Yadis {
 
                 $response = $fetcher->get($yadis_location);
 
-                if ($response->status != 200) {
+                if ((!$response) || ($response->status != 200)) {
                     $result->fail();
                     return $result;
                 }
@@ -330,7 +330,6 @@ class Auth_Yadis_Yadis {
         }
 
         $result->response_text = $response->body;
-		$result->xrds = Auth_Yadis_XRDS::parseXRDS($result->response_text);
         return $result;
     }
 }
