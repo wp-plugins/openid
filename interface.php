@@ -29,8 +29,8 @@ class WordpressOpenIDInterface {
 	 **/
 	function login_form_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
-			or $_GET['action'] == 'loginopenid'
-			or $_GET['action'] == 'commentopenid' ) return $this->logic->error;
+			or $_REQUEST['action'] == 'loginopenid'
+			or $_REQUEST['action'] == 'commentopenid' ) return $this->logic->error;
 		return $r;
 	}
 
@@ -154,8 +154,9 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
+		$hookname = add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
+		add_action("load-$hookname", array( $this, 'js_setup' ));
 
 		if( $this->logic->enabled ) {
 			$hookname =	add_submenu_page('profile.php', 'Your Identity URLs', 'Your Identity URLs', 
@@ -289,6 +290,9 @@ class WordpressOpenIDInterface {
 		if( 'success' == $this->logic->action ) {
 			echo '<div class="updated"><p><strong>Success: '.$this->logic->error.'</strong></p></div>';
 		}
+		elseif( 'warning' == $this->logic->action ) {
+			echo '<div class="error"><p><strong>Warning:</strong> '.$this->logic->error.'</p></div>';
+		}
 		elseif( $this->logic->error ) {
 			echo '<div class="error"><p><strong>Error: '.$this->logic->error.'</strong></p></div>';
 		}
@@ -383,8 +387,13 @@ class WordpressOpenIDInterface {
 				$curl_message .= 'SSL: ' . $curl_version['ssl_version'] . '. ';
 			if(isset($curl_message['libz_version']))
 				$curl_message .= 'zlib: ' . $curl_version['libz_version'] . '. ';
-			if(isset($curl_version['protocols']))
-				$curl_message .= 'Supports: ' . implode(', ',$curl_version['protocols']) . '. ';
+			if(isset($curl_version['protocols'])) {
+				if (is_array($curl_version['protocols'])) {
+					$curl_message .= 'Supports: ' . implode(', ',$curl_version['protocols']) . '. ';
+				} else {
+					$curl_message .= 'Supports: ' . $curl_version['protocols'] . '. ';
+				}
+			}
 		}
 		$this->core->setStatus( 'Curl ' . $curl_message, function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');

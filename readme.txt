@@ -2,8 +2,8 @@
 Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.5.0rc1
-Stable tag: 2.1.5
+Tested up to: 2.5.0
+Stable tag: 2.1.9
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -77,15 +77,6 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 [WordPress.org Support Forum]: http://wordpress.org/support/
 [bugs-reports]: http://dev.wp-plugins.org/report/9?COMPONENT=openid
 
-= WordPress's plugin updater sends me to *simple-openid-plugin*.  What gives? =
-
-The logic behind WordPress's plugin updater is a bit of a black box, and
-somehow older versions of wp-openid were mistakenly mapped to the wrong plugin.
-This should be corrected in version 2.0, but you'll need to clean out the
-update cache for it to take effect.  This can be done by deleting the option
-named *update_plugins* from the wp_options table.  Don't worry, it will be
-automatically rebuilt with the correct values
-
 
 == Screenshots ==
 
@@ -95,6 +86,24 @@ automatically rebuilt with the correct values
 
 
 == Changelog ==
+
+= version 2.1.9 =
+ - fix javascript loading issues
+ - fix various bugs when creating new account with OpenID
+ - fix error message, and add new warning prompt when removing last OpenID for account
+
+= version 2.1.8 =
+ - fix UI issue with wp-login.php page in WP2.5
+ - fix bug printing supported curl protocols (http://wordpress.org/support/topic/159062)
+ - fix jquery bug while adding category in  WP2.5  (http://wordpress.org/support/topic/164305)
+
+= version 2.1.7 =
+ - remove php5 dependency bug... AGAIN!
+ - also remove some other custom changes to php-openid I forgot were in there.  This may actually re-introduce some edge-case
+   bugs, but I'd rather expose them so that we can get the appropriate patches pushed upstream if they really are necessary.
+
+= version 2.1.6 =
+ - update php-openid library to latest.  Now properly supports Yahoo's OpenID provider.
 
 = version 2.1.5 =
  - add support for wordpress v2.5

@@ -242,7 +242,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					break;
 					
 				case 'drop_identity':  // Remove a binding.
-					$this->_profile_drop_identity();
+					$this->_profile_drop_identity($_REQUEST['id']);
 					break;
 			}
 		}
@@ -254,7 +254,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * @private
 		 **/
 		function _profile_verify_identity() {
-			if ( !isset($_GET['openid_mode']) ) {
+			if ( !isset($_REQUEST['openid_mode']) ) {
 				return; // no mode? probably a spoof or bad cancel.
 			}
 
@@ -276,8 +276,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 *
 		 * @private
 		 **/
-		function _profile_drop_identity() {
-			$id = $_GET['id'];
+		function _profile_drop_identity($id) {
 
 			if( !isset( $id)) {
 				$this->error = 'Identity url delete failed: ID paramater missing.';
@@ -290,12 +289,21 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				return;
 			}
 
+			$identity_urls = $this->store->get_my_identities();
+			if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
+				$this->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+					. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+					. '<a href="?page='.$this->core->interface->profile_page_name.'">No, don\'t delete it.</a>';
+				$this->action = 'warning';
+				return;
+			}
+
 			check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 			
 			if( $this->store->drop_identity($id) ) {
 				$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
 					. '</b> removed.';
-				$this->action= 'success';
+				$this->action = 'success';
 				return;
 			}
 			
@@ -570,13 +578,14 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					$oid_user_data =& $this->get_user_data($identity_url);
 
-					if ($_GET['action'] == 'loginopenid') {
+					if ($_REQUEST['action'] == 'loginopenid') {
 						if ( get_option('users_can_register') ) {
 								$oid_user = $this->create_new_user($identity_url, $oid_user_data);
 						} else {
 							// TODO - Start a registration loop in WPMU.
 							$this->error = 'OpenID authentication valid, but unable '
-								. 'to find an account association.';
+								. 'to find a WordPress account associated with this OpenID.<br /><br />'
+								. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.';
 							$this->action = 'error';
 						}
 					} else {
@@ -594,13 +603,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				'". ' . $this->error );
 			
 			if( $this->action == 'redirect' ) {
-				if ( !empty( $_GET['redirect_to'] )) {
-					$redirect_to = $_GET['redirect_to'];
+				if ( !empty( $_REQUEST['redirect_to'] )) {
+					$redirect_to = $_REQUEST['redirect_to'];
 				} else if ( !empty($_REQUEST['comment_post_ID']) ) {
 					$redirect_to = get_permalink($_REQUEST['comment_post_ID']);
 				}
 				
-				if( $_GET['action'] == 'commentopenid' ) {
+				if( $_REQUEST['action'] == 'commentopenid' ) {
 					$comment_id = $this->post_comment($oid_user_data);
 					$redirect_to .= '#comment-' . $comment_id;
 					$comment = get_comment($comment_id);
@@ -646,12 +655,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				
 				$user = new WP_User( $user_id );
 
-				if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
+				if( ! wp_login( $user->user_login, $oid_user_data['user_pass'] ) ) {
 					$this->error = 'User was created fine, but wp_login() for the new user failed. '
 						. 'This is probably a bug.';
 					$this->action= 'error';
-					$this->core->log->error( $this->error );
-					break;
+					$this->core->log->err( $this->error );
+					return;
 				}
 				
 				// notify of user creation
@@ -815,7 +824,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			
 			// Do essentially the same thing as wp-comments-post.php
 			global $wpdb;
-			$comment_post_ID = (int) $_GET['wordpressid'];
+			$comment_post_ID = (int) $_REQUEST['wordpressid'];
 			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts "
 				. "WHERE ID = '$comment_post_ID'");
 			if ( empty($status->comment_status) ) {
