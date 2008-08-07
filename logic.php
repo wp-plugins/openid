@@ -514,7 +514,7 @@ class WordPressOpenID_Logic {
 
 
 		// build return_to URL
-		$return_to = get_option('home');
+		$return_to = trailingslashit(get_option('home'));
 		$auth_request->return_to_args['openid_consumer'] = '1';
 		$auth_request->return_to_args['action'] = $action;
 		if (is_array($arguments) && !empty($arguments)) {
@@ -1240,6 +1240,37 @@ class WordPressOpenID_Logic {
 	}
 
 
+	function xrds_simple($xrds) {
+		$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
+				'URI' => array(array('content' => trailingslashit(get_option('home'))) ),
+			)
+		);
+
+		$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
+				'URI' => array(
+					array(
+						'simple:httpMethod' => 'POST',
+						'content' => $siteurl,
+					),
+				),
+			)
+		);
+
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
+				'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
+			)
+		);
+
+		return $xrds;
+	}
+
 	/**
 	 * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
 	 * is an OpenID response and should be handled accordingly.
@@ -1247,6 +1278,11 @@ class WordPressOpenID_Logic {
 	 * @param WP $wp WP instance for the current request
 	 */
 	function parse_request($wp) {
+		if (array_key_exists('openid_check_login', $_REQUEST)) {
+			echo is_user_logged_in() ? 'true' : 'false';
+			exit;
+		}
+
 		if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
 			openid_init();
 			WordPressOpenID_Logic::finish_openid($_REQUEST['action']);
