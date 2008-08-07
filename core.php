@@ -5,7 +5,7 @@
  Description: Allows the use of OpenID for account registration, authentication, and commenting.  <em>By <a href="http://verselogic.net">Alan Castonguay</a>.</em>
  Author: Will Norris
  Author URI: http://willnorris.com/
- Version: trunk
+ Version: 2.2.2
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  */
 
@@ -157,6 +157,7 @@ add_action( 'personal_options_update', array( 'WordPressOpenID_Logic', 'personal
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_form'), 10, 2);
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_sreg'), 10, 2);
 
+add_filter('xrds_simple', array('WordPressOpenID_Logic', 'xrds_simple'));
 
 // ---------------------------------------------------------------------
 // Exposed functions designed for use in templates, specifically inside

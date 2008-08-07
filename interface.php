@@ -482,7 +482,7 @@ class WordPressOpenID_Interface {
 
 		foreach ($parameters as $k => $v) {
 			if ($k == 'submit') continue;
-			$html .= "\n" . '<input type="hidden" name="'.$k.'" value="'.htmlentities($v).'" />';
+			$html .= "\n" . '<input type="hidden" name="'.$k.'" value="' . htmlspecialchars(stripslashes($v), ENT_COMPAT, get_option('blog_charset')) . '" />';
 		}
 		$html .= '
 			<noscript><div><input type="submit" value="Continue" /></div></noscript>
@@ -493,7 +493,7 @@ class WordPressOpenID_Interface {
 			document.forms[0].submit()
 		</script>';
 
-		wp_die($html);
+		wp_die($html, 'OpenID Authentication Redirect');
 	}
 	
 	function init_errors() {
@@ -523,7 +523,7 @@ class WordPressOpenID_Interface {
 		}
 		
 		$html .= '</form>';
-		wp_die($html);
+		wp_die($html, 'OpenID Authentication Error');
 	}
 	
 }
