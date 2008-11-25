@@ -93,9 +93,13 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Plugin History ==
 
-The original OpenID plugin for WordPress was a collaborative effort between Alan Castonguay and Hans Granqvist.
+The original OpenID plugin for WordPress was a collaborative effort between [Alan Castonguay][] and [Hans Granqvist][].
 
-Will Norris forked the plugin and has since become the maintainer.
+[Will Norris][] forked the plugin and has since become the maintainer.
+
+[Alan Castonguay]: http://verselogic.net/
+[Hans Granqvist]: http://commented.org/
+[Will Norris]: http://willnorris.com/
 
 
 == Changelog ==
