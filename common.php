@@ -133,6 +133,12 @@ function openid_activate_plugin() {
 		if ($role) $role->add_cap('use_openid_provider');
 	}
 
+	// for some reason, show_on_front is not always set, causing is_front_page() to fail
+	$show_on_front = get_option('show_on_front');
+	if ( empty($show_on_front) ) {
+		update_option('show_on_front', 'posts');
+	}
+
 	// Add custom OpenID options
 	add_option( 'openid_enable_commentform', true );
 	add_option( 'openid_plugin_enabled', true );
@@ -148,9 +154,11 @@ function openid_activate_plugin() {
 	openid_create_tables();
 	openid_migrate_old_data();
 
+	// setup schedule cleanup
 	wp_clear_scheduled_hook('cleanup_openid');
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
+	// flush rewrite rules
 	if (!isset($wp_rewrite)) { $wp_rewrite = new WP_Rewrite(); }
 	$wp_rewrite->flush_rules();
 
@@ -272,6 +280,8 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
  * @param string $return_to URL where the OpenID provider should return the user
  */
 function openid_redirect($auth_request, $trust_root, $return_to) {
+	do_action('openid_redirect', $auth_request, $trust_root, $return_to);
+
 	$message = $auth_request->getMessage($trust_root, $return_to, false);
 
 	if (Auth_OpenID::isFailure($message)) {
@@ -450,6 +460,8 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	}
 
 	$return_to = openid_service_url('openid', 'consumer', 'login_post');
+	$return_to = apply_filters('openid_return_to', $return_to);
+
 	$trust_root = openid_trust_root($return_to);
 
 	openid_redirect($auth_request, $trust_root, $return_to);
@@ -604,7 +616,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 
 		if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
 			openid_message(__('User was created fine, but wp_login() for the new user failed. This is probably a bug.', 'openid'));
-			openid_action('error');
+			openid_status('error');
 			openid_error(openid_message());
 			return;
 		}
@@ -814,6 +826,8 @@ function openid_consumer_xrds_simple($xrds) {
 function openid_parse_request($wp) {
 	if (array_key_exists('openid', $wp->query_vars)) {
 
+		openid_clean_request();
+
 		switch ($wp->query_vars['openid']) {
 			case 'consumer':
 				@session_start();
@@ -841,6 +855,46 @@ function openid_parse_request($wp) {
 				echo is_user_logged_in() ? 'true' : 'false';
 				exit;
 		}
+	}
+}
+
+
+/**
+ * Clean HTTP request parameters for OpenID.
+ *
+ * Apache's rewrite module is often used to produce "pretty URLs" in WordPress.  
+ * Other webservers, such as lighttpd, nginx, and Microsoft IIS each have ways 
+ * (read: hacks) for simulating this kind of functionality. This function 
+ * reverses the side-effects of these hacks so that the OpenID request 
+ * variables are in the form that the OpenID library expects.
+ */
+function openid_clean_request() {
+
+	if (array_key_exists('q', $_GET)) {
+
+		// handle nginx web server, which adds an additional query string parameter named "q"
+
+		unset($_GET['q']);
+
+		$vars = explode('&', $_SERVER['QUERY_STRING']);
+		$clean = array();
+
+		foreach ($vars as $v) {
+			if (strpos($v, 'q=') !== 0) {
+				$clean[] = $v;
+			}
+		}
+		
+		$_SERVER['QUERY_STRING'] = implode('&', $clean);
+
+	} else if ($_SERVER['argc'] >= 1 && $_SERVER['argv'][0] == 'error=404') {
+
+		// handle lighttpd hack which uses a custom error-handler, passing 404 errors to WordPress.  
+		// This results in the QUERY_STRING not having the correct information, but fortunately we 
+		// can pull it out of REQUEST_URI
+
+		list($path, $query) = explode('?', $_SERVER['REQUEST_URI'], 2);
+		$_SERVER['QUERY_STRING'] = $query;
 	}
 }
 

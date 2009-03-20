@@ -9,17 +9,11 @@ Allows WordPress to provide and consumer OpenIDs for authentication of users and
 
 == Description ==
 
-**Upgrade Notes:** If you are upgrading to version 3.0 from a previous version,
-it is extremely important that you backup your blog before doing so.  This
-release includes database changes that, though they have been thoroughly
-tested, may cause problems.  You will also need to deactivate and reactivate
-the plugin after upgrading.
-
 OpenID is an [open standard][] that allows users to authenticate to websites
 without having to create a new password.  This plugin allows users to login to
 their local WordPress account using an OpenID, as well as enabling commenters
-to leave authenticated comments with OpenID.  Version 3.0 includes an OpenID
-provider as well, enabling users to login to OpenID-enabled sites using their
+to leave authenticated comments with OpenID.  The plugin also includes an OpenID
+provider, enabling users to login to OpenID-enabled sites using their
 own personal WordPress account. [XRDS-Simple][] is required for the OpenID
 Provider and some features of the OpenID Consumer.
 
@@ -111,9 +105,13 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Screenshots ==
 
-1. Commentors can use their OpenID when leaving a comment.
-2. For users with wordpress accounts, their OpenID associations are managed through the admin panel.
-3. Users can login with their OpenID in place of a traditional username and password.
+1. Commentors can use their OpenID when leaving a comment
+2. Users can login with their OpenID in place of a traditional username and password
+3. OpenID Consumer Options
+4. OpenID Provider Options
+5. Users authorized to use the OpenID Provider can delegate to a different provider
+6. Users can add additional OpenIDs which they can use to login to WordPress
+7. Users authorized to use the OpenID Provider can monitor which sites they've logged in to
 
 
 == Plugin History ==
@@ -128,6 +126,15 @@ Will Norris forked the plugin and has since become the maintainer.
 
 
 == Changelog ==
+
+= version 3.2.2 =
+ - fix problems when using non-index.php permalinks with non-apache web servers
+ - ensure that show_on_front option is not empty
+ - function name typo (props: gunemalli)
+ - fix deprecated pass-by-reference call in php-openid library (props: jschuur)
+ - fix UI bug on registration form with IE browsers (props: oledole)
+ - UI tweaks to better match WP 2.7
+ - update a few strings for localization and POT file
 
 = version 3.2.1 =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
