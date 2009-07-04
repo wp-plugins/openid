@@ -136,6 +136,8 @@ _February 13, 2009_
  - add filter for openid\_trust\_root
 
 = version 3.2 =
+_January 20, 2009_  
+
  - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
  - UI fixes for WordPress 2.7
  - add settings link to plugins page
@@ -152,11 +154,12 @@ _February 13, 2009_
  - fixed issue where OpenID consumer would sometimes break if mod\_encoding was enabled in Apache (used for WebDAV) (fixed #96)
  - don't redirect when performing discovery on OpenID trust root
 
-= version 3.1.4 = 
+= version 3.1.4 (November 04, 2008) =
  - allow OP extensions to include XRDS Types in login service
  - run OpenID comment processor after Akismet, and skip if Akismet marks comment as spam
 
 = version 3.1.3 =
+== October 27, 2008 ==
  - fix error message if /dev/urandom is not readable
 
 = version 3.1.2 =
