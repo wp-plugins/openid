@@ -82,11 +82,13 @@ necessary.
 First, be aware that this only works in WordPress 2.6 and up.  Make sure you've
 turned on SSL in WordPress by [defining either of the following][wp-ssl]
 globals as "true" in your `wp-config.php` file:
- - FORCE_SSL_LOGIN
- - FORCE_SSL_ADMIN
+
+ - FORCE\_SSL\_LOGIN
+ - FORCE\_SSL\_ADMIN
 
 Then, also define the following global as "true" in your `wp-config.php` file:
- - OPENID_SSL
+
+ - OPENID\_SSL
 
 Be aware that you will almost certainly have trouble with this if you are not
 using a certificate purchased from a well-known certificate authority.
@@ -117,8 +119,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 == Changelog ==
 
 = version 3.2.2 =
+_March 19, 2009_
  - fix problems when using non-index.php permalinks with non-apache web servers
- - ensure that show_on_front option is not empty
+ - ensure that show\_on\_front option is not empty
  - function name typo (props: gunemalli)
  - fix deprecated pass-by-reference call in php-openid library (props: jschuur)
  - fix UI bug on registration form with IE browsers (props: oledole)
@@ -126,26 +129,27 @@ report at <http://code.google.com/p/diso/issues/list>.
  - update a few strings for localization and POT file
 
 = version 3.2.1 =
+_February 13, 2009_
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
  - add default values for some openid vars -- necessary for OP-initiated login
  - fix bug with OpenID server where OpenID request was sometimes lost
- - add filter for openid_trust_root
+ - add filter for openid\_trust\_root
 
 = version 3.2 =
  - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
  - UI fixes for WordPress 2.7
  - add settings link to plugins page
  - silence XML parsing errors with PHP4
- - ensure wp_scripts is set
+ - ensure wp\_scripts is set
  - ensure openid comment processing occurs after akismet
  - add ellipses to truncated OpenIDs (fixes #94)
  - fix bug where Yahoo! OpenIDs weren't matching profile URL (fixes #98)
  - don't return empty SREG values
  - Add support for consuming Attribute Exchange
- - use a single return_to URL for all OpenID actions
+ - use a single return\_to URL for all OpenID actions
  - cleaner OpenID service URLs when permalinks configured to do so (all path, no query string)
  - fixed issue where OpenID Server would sometimes break depending on a users permalink structure (fixed #101)
- - fixed issue where OpenID consumer would sometimes break if mod_encoding was enabled in Apache (used for WebDAV) (fixed #96)
+ - fixed issue where OpenID consumer would sometimes break if mod\_encoding was enabled in Apache (used for WebDAV) (fixed #96)
  - don't redirect when performing discovery on OpenID trust root
 
 = version 3.1.4 = 
@@ -157,7 +161,7 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 = version 3.1.2 =
  - ensure source of randomness is set properly
- - prevent duplicate cleanup_openid cron jobs
+ - prevent duplicate cleanup\_openid cron jobs
  - prevent SQL errors on activation
  - suppress verbose error logging with XML parsing
 
