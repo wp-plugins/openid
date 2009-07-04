@@ -118,8 +118,7 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
-= version 3.2.2 =
-_March 19, 2009_  
+= version 3.2.2 (_Mar 19, 2009_) =
  - fix problems when using non-index.php permalinks with non-apache web servers
  - ensure that show\_on\_front option is not empty
  - function name typo (props: gunemalli)
@@ -128,16 +127,13 @@ _March 19, 2009_
  - UI tweaks to better match WP 2.7
  - update a few strings for localization and POT file
 
-= version 3.2.1 =
-_February 13, 2009_  
+= v3.2.1 (Feb 13, 2009) =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
  - add default values for some openid vars -- necessary for OP-initiated login
  - fix bug with OpenID server where OpenID request was sometimes lost
  - add filter for openid\_trust\_root
 
-= version 3.2 =
-_January 20, 2009_  
-
+= version 3.2 (January 20, 2009) =
  - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
  - UI fixes for WordPress 2.7
  - add settings link to plugins page
@@ -159,7 +155,7 @@ _January 20, 2009_
  - run OpenID comment processor after Akismet, and skip if Akismet marks comment as spam
 
 = version 3.1.3 =
-== October 27, 2008 ==
+October 27, 2008
  - fix error message if /dev/urandom is not readable
 
 = version 3.1.2 =
