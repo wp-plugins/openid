@@ -119,8 +119,7 @@ report at <http://code.google.com/p/diso/issues/list>.
 == Changelog ==
 
 = version 3.2.2 =
-_March 19, 2009_
-
+_March 19, 2009_  
  - fix problems when using non-index.php permalinks with non-apache web servers
  - ensure that show\_on\_front option is not empty
  - function name typo (props: gunemalli)
@@ -130,8 +129,7 @@ _March 19, 2009_
  - update a few strings for localization and POT file
 
 = version 3.2.1 =
-_February 13, 2009_
-
+_February 13, 2009_  
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
  - add default values for some openid vars -- necessary for OP-initiated login
  - fix bug with OpenID server where OpenID request was sometimes lost
