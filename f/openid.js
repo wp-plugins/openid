@@ -1,4 +1,6 @@
-// use yuicompress (http://developer.yahoo.com/yui/compressor/) to generate openid.min.js
+/* yuicompress openid.js -o openid.min.js
+ * @see http://developer.yahoo.com/yui/compressor/
+ */
 
 jQuery(function() {
 	jQuery('#openid_system_status').hide();
@@ -10,37 +12,53 @@ jQuery(function() {
 });
 
 function stylize_profilelink() {
-	jQuery("#commentform a[@href$='profile.php']").addClass('openid_link');
+	jQuery("#commentform a[href$='profile.php']").addClass('openid_link');
 }
 
-function add_openid_to_comment_form() {
+/**
+ * Properly integrate the 'Authenticate with OpenID' checkbox into the comment form.
+ * This will move the checkbox below the Website field, and add an AJAX hook to 
+ * show/hide the checkbox depending on whether the given URL is a valid OpenID.
+ */
+function add_openid_to_comment_form(wp_url, nonce) {
+	var openid_nonce = nonce;
 
-	jQuery('#commentform').addClass('openid');
+	var openid_comment = jQuery('#openid_comment');
+	var openid_checkbox = jQuery('#login_with_openid');
+	var url = jQuery('#url');
 
-	var html = ' <a id="openid_enabled_link" href="http://openid.net">(OpenID Enabled)</a> ' +
-				'<div id="openid_text">' +
-					'If you have an OpenID, you may fill it in here.  If your OpenID provider provides ' + 
-					'a name and email, those values will be used instead of the values here.  ' + 
-					'<a href="http://openid.net/what/">Learn more about OpenID</a> or ' + 
-					'<a href="http://openid.net/get/">find an OpenID provider</a>.' +
-				'</div> ';
+	jQuery('label[for="url"],#url').filter(':last').after(openid_comment.hide());
 
-	jQuery('#commentform #url').attr('maxlength', '100');
-	var label = jQuery('#commentform label[@for=url]');
-	var children = jQuery(':visible:hastext', label);
+	if ( url.val() ) check_openid( url );
+	url.blur( function() { check_openid(jQuery(this)); } );
 
-	if (children.length > 0)
-		children.filter(':last').appendToText(html);
-	else if (label.is(':hastext'))
-		label.appendToText(html);
-	else
-		label.append(html);
 
-	// setup action
-	jQuery('#openid_text').hide();
-	jQuery('#openid_enabled_link').click( function() {
-		jQuery('#openid_text').toggle(200); 
-		return false;
-	});
+	/**
+	 * Make AJAX call to WordPress to check if the given URL is a valid OpenID.
+	 * AJAX response should be a JSON structure with two values:
+	 *   'valid' - (boolean) whether or not the given URL is a valid OpenID
+	 *   'nonce' - (string) new nonce to use for next AJAX call
+	 */
+	function check_openid( url ) {
+		url.addClass('openid_loading');
+
+		if ( url.val() == '' ) {
+			openid_checkbox.attr('checked', '');
+			openid_comment.slideUp();
+			return;
+		} 
+
+		jQuery.getJSON(wp_url + '?openid=ajax', {url: url.val(), _wpnonce: openid_nonce}, function(data, textStatus) {
+			url.removeClass('openid_loading');
+			if ( data.valid ) {
+				openid_checkbox.attr('checked', 'checked');
+				openid_comment.slideDown();
+			} else {
+				openid_checkbox.attr('checked', '');
+				openid_comment.slideUp();
+			}
+			openid_nonce = data.nonce;
+		});
+	}
 }
 

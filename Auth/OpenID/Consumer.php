@@ -268,9 +268,9 @@ class Auth_OpenID_Consumer {
         $this->session =& $session;
 
         if ($consumer_cls !== null) {
-            $this->consumer =& new $consumer_cls($store);
+            $this->consumer = new $consumer_cls($store);
         } else {
-            $this->consumer =& new Auth_OpenID_GenericConsumer($store);
+            $this->consumer = new Auth_OpenID_GenericConsumer($store);
         }
 
         $this->_token_key = $this->session_key_prefix . $this->_token_suffix;
@@ -666,7 +666,7 @@ class Auth_OpenID_GenericConsumer {
                                         '_completeInvalid');
 
         return call_user_func_array(array(&$this, $method),
-                                    array($message, $endpoint, $return_to));
+                                    array($message, &$endpoint, $return_to));
     }
 
     /**
@@ -1181,7 +1181,7 @@ class Auth_OpenID_GenericConsumer {
         // oidutil.log('Performing discovery on %s' % (claimed_id,))
         list($unused, $services) = call_user_func($this->discoverMethod,
                                                   $claimed_id,
-                                                  $this->fetcher);
+                                                  &$this->fetcher);
 
         if (!$services) {
             return new Auth_OpenID_FailureResponse(null,
@@ -1295,7 +1295,8 @@ class Auth_OpenID_GenericConsumer {
             Auth_OpenID_OPENID2_NS => array_merge($basic_sig_fields,
                                                   array('response_nonce',
                                                         'claimed_id',
-                                                        'assoc_handle')),
+                                                        'assoc_handle',
+                                                        'op_endpoint')),
             Auth_OpenID_OPENID1_NS => array_merge($basic_sig_fields,
                                                   array('nonce'))
             );

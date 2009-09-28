@@ -5,7 +5,7 @@
  Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
  Author: DiSo Development Team
  Author URI: http://diso-project.org/
- Version: trunk
+ Version: 3.3
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  Text Domain: openid
  */
@@ -18,17 +18,15 @@ define ( 'OPENID_DB_REVISION', 24426);
 
 
 $openid_include_path = dirname(__FILE__);
-if (file_exists(dirname(__FILE__) . '/openid')) {
-	// for WPMU mu-plugins folder
-	$openid_include_path .= PATH_SEPARATOR . dirname(__FILE__) . '/openid';
-}
 
 // check source of randomness
-if (!@is_readable('/dev/urandom')) define( 'Auth_OpenID_RAND_SOURCE', null );
+if ( !@is_readable('/dev/urandom') ) { 
+	define('Auth_OpenID_RAND_SOURCE', null); 
+}
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 require_once 'common.php';
-require_once 'compatibility.php';
+require_once 'consumer.php';
 require_once 'admin_panels.php';
 require_once 'comments.php';
 require_once 'login.php';
@@ -39,18 +37,17 @@ restore_include_path();
 // register activation (and similar) hooks
 register_activation_hook('openid/openid.php', 'openid_activate_plugin');
 register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
-if ( function_exists('register_uninstall_hook') ) {
-	register_uninstall_hook('openid/openid.php', 'openid_uninstall_plugin');
-}
-add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
+register_uninstall_hook('openid/openid.php', 'openid_uninstall_plugin');
 
 // run activation function if new revision of plugin
-if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
+if ( get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision') ) {
 	add_action('admin_init', 'openid_activate_plugin');
 }
 
 
-// -- public functions
+// ---------------- //
+// Public Functions //
+// ---------------- //
 
 /**
  * Check if the user has any OpenIDs.
@@ -61,7 +58,7 @@ if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != 
  */
 function is_user_openid($user = null) {
 	$urls = get_user_openids($user);
-	return (!empty($urls));
+	return ( !empty($urls) );
 }
 
 
@@ -75,15 +72,21 @@ function is_user_openid($user = null) {
  * @since 1.0
  */
 function is_comment_openid($id = null) {
-	if (is_numeric($id)) {
+	if ( is_numeric($id) ) {
 		$comment = get_comment($id);
 	} else {
 		global $comment;
 	}
 
 	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
-	if (!is_array($openid_comments)) return false;
-	return (in_array($comment->comment_ID, $openid_comments));
+
+	if ( is_array($openid_comments) ) {
+		if ( in_array($comment->comment_ID, $openid_comments) ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -97,7 +100,13 @@ function is_comment_openid($id = null) {
  */
 function get_user_openids($id_or_name = null) {
 	$user = get_userdata_by_various($id_or_name);
-	return _get_user_openids($user->ID);
+
+	if ( $user ) {
+		global $wpdb;
+		return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
+	} else {
+		return array();
+	}
 }
 
 
@@ -111,7 +120,7 @@ function get_user_openids($id_or_name = null) {
  */
 function get_user_by_openid($url) {
 	global $wpdb;
-	return $wpdb->get_var( wpdb_prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
+	return $wpdb->get_var( $wpdb->prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
 }
 
 
@@ -136,11 +145,11 @@ function openid_input() {
  */
 if (!function_exists('get_userdata_by_various')) :
 function get_userdata_by_various($id_or_name = null) {
-	if ($id_or_name === null) {
+	if ( $id_or_name === null ) {
 		$user = wp_get_current_user();
 		if ($user == null) return false;
 		return $user->data;
-	} else if (is_numeric($id_or_name)) {
+	} else if ( is_numeric($id_or_name) ) {
 		return get_userdata($id_or_name);
 	} else {
 		return get_userdatabylogin($id_or_name);
@@ -149,6 +158,7 @@ function get_userdata_by_various($id_or_name = null) {
 endif;
 
 // -- end of public functions
+
 
 /**
  * Get the file for the plugin, including the path.  This method will handle the case where the 
@@ -161,11 +171,11 @@ endif;
 function openid_plugin_file() {
 	static $file;
 
-	if (empty($file)) {
+	if ( empty($file) ) {
 		$path = 'openid';
 
 		$base = plugin_basename(__FILE__);
-		if ($base != __FILE__) {
+		if ( $base != __FILE__ ) {
 			$path = basename(dirname($base));
 		}
 
@@ -175,4 +185,3 @@ function openid_plugin_file() {
 	return $file;
 }
 
-?>
