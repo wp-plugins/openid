@@ -9,6 +9,10 @@
 	padding-left: 21px !important; 
 }
 
+.openid_loading {
+	background: url('ajax-loader.gif') right center no-repeat;
+}
+
 body.login #openid_identifier {
 	width: 92%;
 	font-size: 20px;
@@ -18,15 +22,16 @@ body.login #openid_identifier {
 	margin-right: 6px;
 }
 
+#openid_comment {
+	margin: 0.8em 1em;
+}
+#openid_comment input {
+	width: auto;
+}
+
 /* fix link color on wp-login.php */
 body.login form#loginform a.legacy, 
 body.login form#registerform a.legacy {
 	color: #FFF;
 }
 
-#openid_rollup {
-	margin-top: 1em;
-}
-
-#openid_rollup div div { margin: 0.5em; }
-#openid_rollup ul { margin: 0; padding: 0 0 0 5em; }
