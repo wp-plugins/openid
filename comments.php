@@ -7,11 +7,7 @@
 
 // -- WordPress Hooks
 add_action( 'preprocess_comment', 'openid_process_comment', -90);
-if (function_exists('has_action') && has_action('preprocess_comment', 'akismet_auto_check_comment')) {
-	// ensure akismet runs before OpenID
-	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
-	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
-}
+add_action( 'init', 'openid_setup_akismet');
 add_action( 'akismet_spam_caught', 'openid_akismet_spam_caught');
 add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
@@ -22,20 +18,32 @@ if( get_option('openid_enable_approval') ) {
 }
 add_filter( 'get_comment_author_link', 'openid_comment_author_link');
 if( get_option('openid_enable_commentform') ) {
-	add_action( 'wp_head', 'openid_js_setup', 9);
+	add_action( 'wp', 'openid_js_setup', 9);
 	add_action( 'wp_footer', 'openid_comment_profilelink', 10);
-	add_action( 'wp_footer', 'openid_comment_form', 10);
+	add_action( 'comment_form', 'openid_comment_form', 10);
 }
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 6, 2);
 add_action( 'delete_comment', 'unset_comment_openid' );
 
 add_action( 'init', 'openid_recent_comments');
 
+
+/**
+ * Ensure akismet runs before OpenID.
+ */
+function openid_setup_akismet() {
+	if (has_filter('preprocess_comment', 'akismet_auto_check_comment')) {
+		remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
+		add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
+	}
+}
+
+
 /**
  * Akismet caught this comment as spam, so no need to do OpenID discovery on the URL.
  */
 function openid_akismet_spam_caught() {
-	remove_action( 'preprocess_comment', 'openid_process_comment', -98);
+	remove_action( 'preprocess_comment', 'openid_process_comment', -90);
 }
 
 /**
@@ -48,13 +56,19 @@ function openid_akismet_spam_caught() {
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
+	if ( array_key_exists('openid_skip', $_REQUEST) && $_REQUEST['openid_skip'] ) return $comment;
+	if ( $comment['comment_type'] != '' ) return $comment;
+
+	if ( array_key_exists('openid_identifier', $_POST) ) {
+		$openid_url = $_POST['openid_identifier'];
+	} elseif ( $_REQUEST['login_with_openid'] ) {
+		$openid_url = $_POST['url'];
+	}
+
 	@session_start();
+	unset($_SESSION['openid_posted_comment']);
 
-	if ($_REQUEST['openid_skip']) return $comment;
-		
-	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
-
-	if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
+	if ( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
 		$_SESSION['openid_comment_post'] = $_POST;
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
 		$_SESSION['openid_comment_post']['openid_skip'] = 1;
@@ -71,7 +85,9 @@ function openid_process_comment( $comment ) {
 	}
 
 	// duplicate name and email check from wp-comments-post.php
-	openid_require_name_email();
+	if ( $comment['comment_type'] == '') {
+		openid_require_name_email();
+	}
 
 	return $comment;
 }
@@ -125,7 +141,7 @@ function openid_option_require_name_email( $value ) {
 		return $value;
 	}
 
-	if ($_REQUEST['openid_skip']) {
+	if (array_key_exists('openid_skip', $_REQUEST) && $_REQUEST['openid_skip']) {
 		return get_option('openid_no_require_name') ? false : $value;
 	}
 	
@@ -196,6 +212,8 @@ function openid_comment_author_link( $html ) {
  * @action post_comment
  */
 function update_comment_openid($comment_ID) {
+	session_start();
+
 	if ($_SESSION['openid_posted_comment']) {
 		set_comment_openid($comment_ID);
 		unset($_SESSION['openid_posted_comment']);
@@ -218,11 +236,7 @@ function update_comment_openid($comment_ID) {
 function openid_comment_profilelink() {
 	global $wp_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
-		$wp_scripts = new WP_Scripts();
-	}
-
-	if ((is_single() || is_comments_popup()) && is_user_openid() && $wp_scripts->query('openid')) {
+	if (comments_open() && is_user_openid() && $wp_scripts->query('openid')) {
 		echo '<script type="text/javascript">stylize_profilelink()</script>';
 	}
 }
@@ -236,12 +250,16 @@ function openid_comment_profilelink() {
 function openid_comment_form() {
 	global $wp_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
-		$wp_scripts = new WP_Scripts();
-	}
-
-	if (!is_user_logged_in() && (is_single() || is_comments_popup()) && isset($wp_scripts) && $wp_scripts->query('openid')) {
-		echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
+	if (comments_open() && !is_user_logged_in() && isset($wp_scripts) && $wp_scripts->query('openid')) {
+?>
+		<span id="openid_comment">
+			<label>
+				<input type="checkbox" id="login_with_openid" name="login_with_openid" checked="checked" />
+				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.', 'openid'); ?>
+			</label>
+		</span>
+		<script type="text/javascript">jQuery(function(){ add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>') })</script>
+<?php
 	}
 }
 
@@ -358,9 +376,11 @@ function unset_comment_openid($id) {
  * @see get_user_data
  */
 function openid_get_user_data_form($data, $identity_url) {
-	$comment = $_SESSION['openid_comment_post'];
+	if ( array_key_exists('openid_comment_post', $_SESSION) ) {
+		$comment = $_SESSION['openid_comment_post'];
+	}
 
-	if (!$comment) {
+	if ( !isset($comment) || !$comment) {
 		return $data;
 	}
 
@@ -378,11 +398,20 @@ function openid_get_user_data_form($data, $identity_url) {
 }
 
 
+/**
+ * Remove the CSS snippet added by the Recent Comments widget because it breaks entries that include the OpenID logo.
+ */
 function openid_recent_comments() {
-	if (is_active_widget('wp_widget_recent_comments')) {
-		remove_action('wp_head', 'wp_widget_recent_comments_style');
-		// most themes seem to handle the recent comments widget okay, so I don't think the following style addition is necessary.  We'll leave it here just in case it's needed later.
-		//add_action('wp_head', create_function('', 'echo \'<style type="text/css">.recentcomments a{display:inline !important;padding: 0;margin: 0 !important;}</style>\';' ));
+	global $wp_widget_factory;
+
+	if ( $wp_widget_factory && array_key_exists('WP_Widget_Recent_Comments', $wp_widget_factory->widgets) ) {
+		// this is an ugly hack because remove_action doesn't actually work the way it should with objects
+		foreach ( array_keys($GLOBALS['wp_filter']['wp_head'][10]) as $key ) {
+			if ( strpos($key, 'WP_Widget_Recent_Commentsrecent_comments_style') === 0 ) {
+				remove_action('wp_head', $key);
+				return;
+			}
+		}
 	}
 }
 
