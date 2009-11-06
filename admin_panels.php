@@ -53,12 +53,17 @@ function openid_admin_panels() {
 		add_action('wpmu_options', 'openid_wpmu_options');
 		add_action('update_wpmu_options', 'openid_update_wpmu_options');
 	} else {
-		// add OpenID options to General Settings page
-		add_settings_field('openid_general_settings', 'OpenID Settings', 'openid_general_settings', 'general', 'default');
+		// add OpenID options to General Settings page.  For now, the only option on this page is dependent on the
+		// 'users_can_register' option, so only add the OpenID Settings if that is set.  If additional OpenID settings
+		// are added to the General Settings page, this check may no longer be necessary
+		if ( get_option('users_can_register') ) {
+			add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings', 
+				'general', 'default');
+		}
 	}
 
 	// add OpenID options to Discussion Settings page
-	add_settings_field('openid_disucssion_settings', 'OpenID Settings', 'openid_discussion_settings', 'discussion', 'default');
+	add_settings_field('openid_disucssion_settings', __('OpenID Settings', 'openid'), 'openid_discussion_settings', 'discussion', 'default');
 }
 
 
@@ -83,6 +88,8 @@ function openid_admin_register_settings() {
  */
 function openid_set_cap($newvalue, $oldvalue) {
 	global $wp_roles;
+
+	$newvalue = (array) $newvalue;
 
 	foreach ($wp_roles->role_names as $key => $name) {
 		$role = $wp_roles->get_role($key);
@@ -148,8 +155,8 @@ function openid_options_page() {
 
 			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
 
-			<div class="updated fade"><p>Please note that all OpenID Consumer options have been moved to their respective sections of the 
-				<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.</p></div>
+			<div class="updated fade"><p><?php _e('Please note that all OpenID Consumer options have been moved to their respective sections of the '
+				. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid') ?></p></div>
 
 
 			<?php 
@@ -587,7 +594,7 @@ function openid_printSystemStatus() {
 
 	if( $openid_enabled ) {	// Display status information
 		echo'<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
-		. '<small> (<a href="#TB_inline?height=600&width=800&inlineId=openid_system_status" id="openid_status_link" class="thickbox" title="System Status">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
+		. '<small> (<a href="#TB_inline?height=600&width=800&inlineId=openid_system_status" id="openid_status_link" class="thickbox" title="' . __('System Status', 'openid') . '">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
 	} else {
 		echo '<p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
 		. '</strong></p>';
@@ -658,9 +665,9 @@ function openid_profile_management() {
 
 				$messages = array(
 					'',
-					'Unable to authenticate OpenID.',
-					'OpenID assertion successful, but this URL is already associated with another user on this blog.',
-					'Added association with OpenID.',
+					__('Unable to authenticate OpenID.', 'openid'),
+					__('OpenID assertion successful, but this URL is already associated with another user on this blog.', 'openid'),
+					__('Added association with OpenID.', 'openid')
 				);
 
 				if (is_numeric($message)) {
@@ -845,9 +852,9 @@ function openid_extend_profile() {
 	<td>
 		<p style="margin-top:0;">'.__('OpenID Delegation allows you to use an external OpenID provider of your choice.', 'openid').'</p>
 		<p>
-			<input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_usermeta($user->ID, 'openid_delegate').'" />
-			To delegate, enter a valid OpenID.  Otherwise leave this blank.
-		</p>
+			<input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_usermeta($user->ID, 'openid_delegate').'" /> '
+			. __('To delegate, enter a valid OpenID. Otherwise leave this blank.', 'openid')
+		. '</p>
 	</td>
 </tr>
 </table>
@@ -986,7 +993,7 @@ function openid_discussion_settings() {
 		<label for="openid_no_require_name">
 			<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php 
 				echo checked(true, get_option('openid_no_require_name')) ; ?> />
-			<?php _e('Don\'t require name and e-mail for comments left with a verified OpenID', 'openid') ?>
+			<?php _e('Do not require name and e-mail for comments left with a verified OpenID', 'openid') ?>
 		</label>
 		<br />
 		<?php endif; ?>

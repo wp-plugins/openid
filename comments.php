@@ -255,7 +255,7 @@ function openid_comment_form() {
 		<span id="openid_comment">
 			<label>
 				<input type="checkbox" id="login_with_openid" name="login_with_openid" checked="checked" />
-				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.'); ?>
+				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.', 'openid'); ?>
 			</label>
 		</span>
 		<script type="text/javascript">jQuery(function(){ add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>') })</script>
@@ -398,17 +398,19 @@ function openid_get_user_data_form($data, $identity_url) {
 }
 
 
+/**
+ * Remove the CSS snippet added by the Recent Comments widget because it breaks entries that include the OpenID logo.
+ */
 function openid_recent_comments() {
-	if ( is_active_widget('wp_widget_recent_comments') ) {
-		remove_action('wp_head', 'wp_widget_recent_comments_style');
+	global $wp_widget_factory;
 
-		// most themes seem to handle the recent comments widget okay, so I don't think the following style addition is necessary.  We'll leave it here just in case it's needed later.
-		//add_action('wp_head', create_function('', 'echo \'<style type="text/css">.recentcomments a{padding: 0;margin: 0 !important;}</style>\';' ));
-	} else {
-		// WP 2.8 +
-		global $wp_widget_factory;
-		if ( $wp_widget_factory && array_key_exists('WP_Widget_Recent_Comments', $wp_widget_factory->widgets) ) {
-			remove_action('wp_head', array($wp_widget_factory->widgets['WP_Widget_Recent_Comments'], 'recent_comments_style'));
+	if ( $wp_widget_factory && array_key_exists('WP_Widget_Recent_Comments', $wp_widget_factory->widgets) ) {
+		// this is an ugly hack because remove_action doesn't actually work the way it should with objects
+		foreach ( array_keys($GLOBALS['wp_filter']['wp_head'][10]) as $key ) {
+			if ( strpos($key, 'WP_Widget_Recent_Commentsrecent_comments_style') === 0 ) {
+				remove_action('wp_head', $key);
+				return;
+			}
 		}
 	}
 }
