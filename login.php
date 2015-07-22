@@ -1,6 +1,6 @@
 <?php
 /**
- * All the code required for handling logins via wp-login.php.  These functions should not be considered public, 
+ * All the code required for handling logins via wp-login.php.  These functions should not be considered public,
  * and may change without notice.
  */
 
@@ -36,7 +36,7 @@ function openid_authenticate($user) {
 		$identity_url= $_REQUEST['identity_url'];
 
 		if ( !wp_verify_nonce($_REQUEST['_wpnonce'], 'openid_login_' . md5($identity_url)) ) {
-			$user = new WP_Error('openid_login_error', 'Error during OpenID authentication.  Please try again. (invalid nonce)');
+			$user = new WP_Error('openid_login_error', __('Error during OpenID authentication.  Please try again. (invalid nonce)', 'openid'));
 		}
 
 		if ( $identity_url ) {
@@ -65,27 +65,43 @@ add_action( 'authenticate', 'openid_authenticate' );
  */
 function openid_finish_login($identity_url, $action) {
 	if ($action != 'login') return;
-		
-	// create new user account if appropriate
-	$user_id = get_user_by_openid($identity_url);
-	if ( $identity_url && !$user_id && get_option('users_can_register') ) {
+
+	if ($identity_url) {
+		// create new user account if appropriate
+		$user_id = get_user_by_openid($identity_url);
 		$user_data =& openid_get_user_data($identity_url);
-		openid_create_new_user($identity_url, $user_data);
+
+		if (!$user_id) {
+			if (get_option('users_can_register')) {
+				// registration is enabled so create a new user
+				openid_create_new_user($identity_url, $user_data);
+			} else {
+				// generate a error because it is not possible to create a new user
+				openid_message(__('Unable to create a new user.', 'openid'));
+				openid_status('error');
+			}
+		} else {
+			do_action('openid_consumer_update_user_custom_data', $user_id, $user_data);
+		}
 	}
-	
+
 	// return to wp-login page
 	$url = get_option('siteurl') . '/wp-login.php';
-	if (empty($identity_url)) {
+
+	$status = openid_status();
+	$error = openid_message();
+
+	if ($status == 'error' && !empty($error)) {
 		$url = add_query_arg('openid_error', openid_message(), $url);
 	}
 
-	$url = add_query_arg( array( 
-		'finish_openid' => 1, 
-		'identity_url' => urlencode($identity_url), 
+	$url = add_query_arg( array(
+		'finish_openid' => 1,
+		'identity_url' => urlencode($identity_url),
 		'redirect_to' => $_SESSION['openid_finish_url'],
-		'_wpnonce' => wp_create_nonce('openid_login_' . md5($identity_url)), 
+		'_wpnonce' => wp_create_nonce('openid_login_' . md5($identity_url)),
 	), $url);
-		
+
 	wp_safe_redirect($url);
 	exit;
 }
@@ -134,7 +150,7 @@ function openid_wp_login_form() {
 
 
 /**
- * Add information about registration to wp-login.php?action=register 
+ * Add information about registration to wp-login.php?action=register
  *
  * @action: register_form
  **/
@@ -143,18 +159,10 @@ function openid_wp_register_form() {
 	<div style="width:100%;">'; //Added to fix IE problem
 
 	if (get_option('openid_required_for_registration')) {
+	    wp_enqueue_script('jquery');
+	    wp_enqueue_script('openid-register', plugin_dir_url(__FILE__) . 'f/register.js', array('jquery'), OPENID_PLUGIN_REVISION);
+
 		$label = __('Register using an OpenID:', 'openid');
-		echo '
-		<script type="text/javascript">
-			jQuery(function() {
-				jQuery("#registerform > p:first").hide();
-				jQuery("#registerform > p:first + p").hide();
-				jQuery("#reg_passmail").hide();
-				jQuery("p.submit").css("margin", "1em 0");
-				var link = jQuery("#nav a:first");
-				jQuery("#nav").text("").append(link);
-			});
-		</script>';
 	} else {
 		$label = __('Or register using an OpenID:', 'openid');
 
@@ -228,4 +236,3 @@ function openid_register_post($username, $password, $errors) {
 		wp_signon();
 	}
 }
-?>
